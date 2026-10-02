@@ -273,6 +273,28 @@ textarea.input { min-height: 72px; resize: vertical; }
 .empty { text-align: center; color: var(--muted); padding: 30px 10px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .empty svg { width: 40px; height: 40px; opacity: .6; }
 
+/* Verificación */
+.cam { position: relative; width: 100%; aspect-ratio: 4 / 5; border-radius: 18px; overflow: hidden; background: #0B1210; }
+.cam video, .cam img.shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cam video.mirror { transform: scaleX(-1); }
+.cam-ov { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cam-fb { position: absolute; inset: 0; display: grid; place-items: center; animation: breathe 2.4s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .6; } }
+.cam-hint { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 14px 14px; text-align: center; color: #fff; font-weight: 700; font-size: 15px; background: linear-gradient(to top, rgba(5,12,10,.8), transparent); }
+.spinner.sm { width: 28px; height: 28px; border-width: 3px; margin: 0; flex: none; }
+.bizrow { display: grid; grid-template-columns: 9.5em 1fr 4.6em; gap: 8px; align-items: center; }
+.bizrow b { text-align: right; }
+.bizbar { height: 12px; background: var(--surface); border-radius: 4px; overflow: hidden; }
+.bizbar i { display: block; height: 100%; border-radius: 0 4px 4px 0; }
+.bizbar i.rev { background: var(--brand); }
+.bizbar i.cost { background: var(--muted); }
+input[type="range"] { width: 100%; accent-color: var(--brand); }
+.door { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; border: 2px solid var(--accent); }
+.thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.thumbs figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.thumbs img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+.thumbs figcaption { font-size: 11.5px; color: var(--muted); }
+
 @media (max-width: 820px) {
   .stage { flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
   .panel { width: auto; padding: 10px 16px; gap: 8px; flex-direction: row; align-items: center; justify-content: space-between; background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; }
@@ -305,17 +327,17 @@ textarea.input { min-height: 72px; resize: vertical; }
     <div class="stack guide-wrap">
       <span class="eyebrow">Recorrido sugerido</span>
       <ol class="guide">
-        <li>Como Paciente, regístrate: la cédula se valida con el dígito verificador real.</li>
-        <li>Busca en el mapa y reserva con Andrea Salazar.</li>
-        <li>Cambia a Fisio: acepta la solicitud, inicia el viaje e ingresa el PIN del paciente.</li>
-        <li>Termina la sesión y califica de ambos lados. Revisa Ganancias para ver la comisión.</li>
-        <li>Como Admin, aprueba a un fisio nuevo: aparecerá en el mapa del paciente.</li>
+        <li>Como Paciente, crea tu cuenta: cédula, código dactilar, fotos de la cédula y selfie con prueba de vida, como en un banco.</li>
+        <li>Reserva con Andrea Salazar y fija el pin exacto de tu puerta.</li>
+        <li>Cambia a Fisio: acepta, avanza hasta estar a menos de 150 m y marca «Llegué».</li>
+        <li>Como Paciente, confirma que es la persona del perfil y dale tu PIN. Termina y califiquen.</li>
+        <li>En Fisio › Perfil prueba el registro de un fisio nuevo. Luego en Admin › Negocio mira si la app es rentable.</li>
       </ol>
     </div>
     <div class="panel-foot">
       <button class="linkbtn" id="resetBtn">Reiniciar demo</button>
     </div>
-    <p class="note">Cédula de prueba válida: <span class="mono">1710034065</span>. Código SMS: cualquier 4 dígitos. Ningún pago ni alerta es real.</p>
+    <p class="note">Cada paso tiene «Usar datos de ejemplo». Si abres el prototipo desde su archivo en el celular, usa la cámara real; aquí se simula. Ningún pago, consulta ni alerta es real.</p>
   </aside>
 
   <div class="phone">
@@ -373,7 +395,7 @@ function validarCedula(c) {
   if ((10 - s % 10) % 10 !== +c[9]) return 'El dígito verificador no coincide. Revisa el número.';
   return '';
 }
-const COMISION = 0.15, IVA = 0.15;
+const COMISION = 0.15, IVA = 0.15, FEE = 0.99;
 const liquidar = precio => { const com = precio * COMISION, iva = com * IVA; return { precio, com, iva, neto: precio - com - iva }; };
 
 // ---------- Data (ejemplo) ----------
@@ -431,11 +453,12 @@ const SEED_EARN = [
 const CLIENT_REQ = { id: 'r-seed', client: { name: 'Jorge Mena', initials: 'JM', hue: '#59607A', rating: 4.9, sessions: 7, verified: true }, fisioId: 'f1', motivo: 'Dolor lumbar después de jugar fútbol el fin de semana.', address: 'Av. 6 de Diciembre y Whymper, edificio Torres del Parque, depto 5B', ref: 'Portón negro junto a la farmacia', barrio: 'La Floresta', dist: 1.4, date: 'Hoy', time: '17:00', price: 30, status: 'pendiente', pin: '3907', seed: true };
 
 // ---------- State ----------
-const KEY = 'fisiocerca-demo-v1';
+const KEY = 'fisiocerca-demo-v2';
 const fresh = () => ({
   role: 'cliente',
   views: { cliente: { name: 'welcome' }, fisio: { name: 'inicio' }, admin: { name: 'cola' } },
-  user: { name: 'Daniela Paredes', cedula: '', phone: '', selfie: '', verified: false, contacto: 'Mamá · 099 812 3344' },
+  user: { name: 'Daniela Paredes', cedula: '', phone: '', selfie: '', verified: false, kycStatus: 'none', contacto: 'Mamá · 099 812 3344' },
+  kyc: null, biz: { fisios: 50, ses: 8, precio: 30, com: 15, fee: 0.99, pro: 20, nuevos: 300, mkt: 1500, equipo: 1200, infra: 350 },
   filter: 'Todas', mode: 'agendar', sel: null,
   extraFisios: [], queue: SEED_QUEUE.map(q => ({ ...q })),
   bookings: [], seedReq: { ...CLIENT_REQ }, alerts: [],
@@ -444,10 +467,12 @@ const fresh = () => ({
 });
 let S;
 try { S = JSON.parse(localStorage.getItem(KEY)) || fresh(); } catch { S = fresh(); }
+if (S.kyc) S.kyc.live = false;
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 
 const allFisios = () => SEED_FISIOS.concat(S.extraFisios);
 const fisioById = id => allFisios().find(f => f.id === id);
+const shortName = n => { const [a, b] = n.trim().split(/\s+/); return b ? `${a} ${b[0]}.` : a; };
 const initials = n => n.split(' ').map(w => w[0]).slice(0, 2).join('');
 const av = (f, cls = '') => `<div class="avatar ${cls}" style="background:${f.hue}">${esc(initials(f.name))}</div>`;
 function dist(a, b) {
@@ -534,58 +559,473 @@ function cWelcome() {
       </ul>
     </div>
     <div class="stack">
-      <button class="btn" data-go="registro">Crear cuenta</button>
+      <button class="btn" data-act="kStartCliente">Crear cuenta</button>
       <button class="btn line" data-act="skipOnboarding">Explorar sin registrarme (demo)</button>
     </div>
   </div>`;
 }
-function progress(n) { return `<div class="progress">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`; }
-function cRegistro() {
-  const u = S.user, err = u.cedula ? validarCedula(u.cedula) : '';
-  return `${topbar('Crear cuenta', 'welcome')}
-  <form class="pad" id="regForm" novalidate>
-    ${progress(1)}
-    <div><h2 style="font-size:22px">Tus datos</h2><p class="muted small" style="margin:4px 0 0">Los fisioterapeutas verán tu nombre y foto antes de aceptar. Así también los cuidamos a ellos.</p></div>
-    <div class="field"><label for="f-name">Nombre completo</label><input class="input" id="f-name" name="name" value="${esc(u.name)}" autocomplete="name"></div>
-    <div class="field"><label for="f-ced">Número de cédula</label>
-      <input class="input ${err ? 'bad' : ''}" id="f-ced" name="cedula" inputmode="numeric" maxlength="10" placeholder="10 dígitos" value="${esc(u.cedula)}">
-      <span class="hint ${err ? 'bad' : u.cedula ? 'good' : ''}" id="cedHint">${err ? esc(err) : u.cedula ? 'Cédula válida.' : 'Prueba con 1710034065. Validamos el dígito verificador.'}</span></div>
-    <div class="field"><label for="f-tel">Celular</label>
-      <div class="row"><span class="input mono" style="width:auto">+593</span><input class="input grow" id="f-tel" name="phone" inputmode="tel" maxlength="10" placeholder="099 123 4567" value="${esc(u.phone)}"></div>
-      <span class="hint" id="telHint">Te enviaremos un código por SMS.</span></div>
-    <label class="checkline"><input type="checkbox" id="f-terms" ${u.terms ? 'checked' : ''}><span>Acepto los Términos y autorizo el tratamiento de mis datos de salud según la Ley Orgánica de Protección de Datos Personales.</span></label>
-    <button class="btn" type="submit" id="regNext">Continuar</button>
+// ---------- Verificación de identidad (como en la banca digital) ----------
+// Pasos: consentimiento → celular (OTP) → cédula + código dactilar → foto frente → foto reverso
+// → selfie con prueba de vida → (fisio: documentos profesionales) → verificación → resultado.
+// En producción, la captura, la prueba de vida y la comparación facial las hace el SDK de un proveedor
+// autorizado, que además consulta el servicio demográfico + biométrico del Registro Civil.
+const KYC_STEPS = {
+  cliente: ['intro', 'consent', 'phone', 'otp', 'datos', 'front', 'back', 'selfie', 'check', 'result'],
+  fisio: ['intro', 'consent', 'phone', 'otp', 'datos', 'front', 'back', 'selfie', 'prof', 'check', 'result'],
+};
+const KYC_SAMPLE = {
+  cliente: { name: 'Daniela Paredes', cedula: '1710034065', dactilar: 'V4343V4242', phone: '0987654321', born: '14/03/1994' },
+  fisio: { name: 'Mateo Guerrero', cedula: '1720935616', dactilar: 'E3344I2232', phone: '0998765432', born: '02/11/1997' },
+};
+const newKyc = who => ({ who, step: 'intro', phone: '', cedula: '', dactilar: '', front: '', back: '', selfie: '', consent: [false, false], forced: 'ok', checkIdx: -1, attempts: 0, live: false,
+  prof: { senescyt: '', msp: '', antecedentes: '', specs: [], price: 25, barrio: 'La Mariscal' } });
+const kycStepsOf = k => KYC_STEPS[k.who];
+function kycGo(step) { S.kyc.step = step; save(); render(true); }
+function kycPrev() { const st = kycStepsOf(S.kyc), i = st.indexOf(S.kyc.step); return i > 0 ? st[i - 1] : null; }
+function kycNext() { const st = kycStepsOf(S.kyc); kycGo(st[st.indexOf(S.kyc.step) + 1]); }
+function kycProgress() {
+  const st = kycStepsOf(S.kyc).filter(s => !['intro', 'result'].includes(s)), i = st.indexOf(S.kyc.step);
+  return `<div class="progress">${st.map((_, j) => `<i class="${j <= i ? 'on' : ''}"></i>`).join('')}</div>`;
+}
+const kTop = title => `<div class="topbar"><button class="iconbtn" data-act="kBack" aria-label="Volver">${ic('back')}</button><h2>${esc(title)}</h2><span class="tiny muted" style="padding-right:8px">${ic('lock', 'width="14" height="14" style="vertical-align:-2px"')} Cifrado</span></div>`;
+const kHead = (t, s) => `<div><h2 style="font-size:22px">${t}</h2>${s ? `<p class="muted small" style="margin:6px 0 0">${s}</p>` : ''}</div>`;
+
+function kIntro() {
+  const k = S.kyc, fisio = k.who === 'fisio';
+  const items = [['phone', 'Tu celular', 'Te enviamos un código por SMS'], ['doc', 'Tu cédula física', 'Número, código dactilar y fotos de ambos lados'], ['camera', 'Una selfie en vivo', 'Con prueba de vida: parpadeas y giras la cabeza']];
+  if (fisio) items.push(['award', 'Tus documentos profesionales', 'Registro SENESCYT, registro MSP y antecedentes penales']);
+  return `${kTop(fisio ? 'Únete como especialista' : 'Verifica tu identidad')}
+  <div class="pad">
+    ${kHead(fisio ? 'Verificamos a cada especialista como lo hace un banco' : 'Toma unos 2 minutos, como abrir una cuenta en el banco', fisio ? 'Los pacientes te abren la puerta de su casa. Por eso validamos tu identidad con el Registro Civil y revisamos tus títulos antes de publicar tu perfil.' : 'Así sabemos que cada paciente y cada fisio es quien dice ser. Nadie entra a una casa, ni recibe a alguien, sin estar verificado.')}
+    <div class="card list">${items.map(([i, t, d], n) => `<div class="li"><div class="check-ico ok" style="background:var(--brand-soft);color:var(--brand)">${ic(i)}</div><div class="grow"><b class="small">${n + 1}. ${t}</b><div class="tiny muted">${d}</div></div></div>`).join('')}</div>
+    <div class="callout">${ic('lock')}<span>Tu cédula y tu rostro solo se usan para verificarte. Los fisios ${fisio ? 'y pacientes ' : ''}nunca ven tu número de cédula ni tu teléfono.</span></div>
+    <div class="card stack" style="border-style:dashed"><span class="eyebrow">Demo · resultado de la verificación</span>
+      <div class="tags">${[['ok', 'Aprobada'], ['review', 'Revisión manual'], ['fail', 'Rechazada']].map(([v, l]) => `<button class="chip" data-kforce="${v}" aria-pressed="${k.forced === v}">${l}</button>`).join('')}</div></div>
+    <button class="btn" data-act="kNext">Empezar</button>
+  </div>`;
+}
+function kConsent() {
+  const k = S.kyc;
+  return `${kTop('Autorización')}
+  <div class="pad">
+    ${kycProgress()}
+    ${kHead('Antes de empezar, necesitamos tu autorización', 'La Ley Orgánica de Protección de Datos Personales trata tu rostro y tus datos de salud como datos sensibles. Por eso te pedimos permiso expreso para cada uso.')}
+    <label class="checkline card"><input type="checkbox" id="k-c0" ${k.consent[0] ? 'checked' : ''}><span><b>Uso de mi rostro (dato biométrico).</b> Autorizo comparar mi selfie con la foto de mi cédula y con la del Registro Civil, solo para verificar mi identidad.</span></label>
+    <label class="checkline card"><input type="checkbox" id="k-c1" ${k.consent[1] ? 'checked' : ''}><span><b>Consulta al Registro Civil.</b> Autorizo validar mi número de cédula y código dactilar en el servicio oficial de identificación.</span></label>
+    <div class="card stack small"><b>Qué guardamos y por cuánto tiempo</b>
+      <span class="muted">Una plantilla biométrica cifrada, no tu foto original. Se elimina cuando cierras tu cuenta. Puedes pedir acceso, corrección o eliminación cuando quieras.</span></div>
+    <button class="btn" data-act="kNext" id="kConsentBtn" ${k.consent.every(Boolean) ? '' : 'disabled'}>Acepto y continúo</button>
+    <button class="btn line" data-act="kAlt">Prefiero no usar reconocimiento facial</button>
+    <span class="hint" style="text-align:center">La ley exige ofrecer una opción sin biometría: una videollamada con un agente.</span>
+  </div>`;
+}
+function kAlt() {
+  const k = S.kyc, slots = ['Hoy 16:00', 'Hoy 17:30', 'Mañana 09:00', 'Mañana 11:00'];
+  return `<div class="topbar"><button class="iconbtn" data-act="kToConsent" aria-label="Volver">${ic('back')}</button><h2>Verificación con un agente</h2></div>
+  <div class="pad">
+    ${kHead('Videollamada de 5 minutos', 'Un agente de FisioCerca te pide mostrar tu cédula a la cámara y la compara contigo. No guardamos ningún dato biométrico.')}
+    <div class="stack"><span class="h-sec">Elige un horario</span><div class="tags">${slots.map(s => `<button class="chip" data-kaltslot="${s}" aria-pressed="${k.altSlot === s}">${s}</button>`).join('')}</div></div>
+    <div class="callout warn">${ic('clock')}<span>Mientras tanto puedes explorar perfiles, pero ${k.who === 'fisio' ? 'tu perfil no se publica' : 'no podrás reservar'} hasta completar la videollamada.</span></div>
+    <button class="btn" data-act="kAltConfirm" ${k.altSlot ? '' : 'disabled'}>Agendar videollamada</button>
+  </div>`;
+}
+function kPhone() {
+  return `${kTop('Tu celular')}
+  <form class="pad" id="kPhoneForm" novalidate>
+    ${kycProgress()}
+    ${kHead('¿Cuál es tu número de celular?', 'Te enviaremos un código de 6 dígitos. Debe ser un número a tu nombre.')}
+    <div class="field"><label for="k-tel">Celular</label>
+      <div class="row"><span class="input mono" style="width:auto">+593</span><input class="input grow mono" id="k-tel" inputmode="tel" maxlength="10" placeholder="0991234567" value="${esc(S.kyc.phone)}" autocomplete="tel"></div>
+      <span class="hint" id="k-telHint">10 dígitos, empieza con 09.</span></div>
+    <button class="btn" type="submit">Enviar código</button>
+    <button class="btn line" type="button" data-act="kSample">Usar datos de ejemplo</button>
   </form>`;
 }
-function cOtp() {
-  return `${topbar('Verificar celular', 'registro')}
-  <form class="pad" id="otpForm" novalidate>
-    ${progress(2)}
-    <div><h2 style="font-size:22px">Ingresa el código</h2><p class="muted small" style="margin:4px 0 0">Enviamos un SMS al <span class="mono">+593 ${esc(S.user.phone)}</span>. En la demo vale cualquier código.</p></div>
-    <div class="otp">${[0, 1, 2, 3].map(i => `<input id="otp${i}" inputmode="numeric" maxlength="1" aria-label="Dígito ${i + 1}">`).join('')}</div>
+function kOtp() {
+  return `${kTop('Código SMS')}
+  <form class="pad" id="kOtpForm" novalidate>
+    ${kycProgress()}
+    ${kHead('Ingresa el código', `Lo enviamos al <span class="mono">+593 ${esc(S.kyc.phone)}</span>. En la demo vale cualquier código.`)}
+    <div class="otp">${[0, 1, 2, 3, 4, 5].map(i => `<input id="otp${i}" inputmode="numeric" maxlength="1" aria-label="Dígito ${i + 1}" autocomplete="one-time-code">`).join('')}</div>
+    <span class="hint">¿No llegó? Puedes reenviarlo en <span class="mono">0:45</span>.</span>
     <button class="btn" type="submit">Verificar</button>
   </form>`;
 }
-function cSelfie() {
-  const u = S.user;
-  return `${topbar('Verificar identidad', 'otp')}
+function kDatos() {
+  const k = S.kyc, err = k.cedula.length === 10 ? validarCedula(k.cedula) : '', dOk = /^[A-Z]\d{4}[A-Z]\d{4}$/.test(k.dactilar);
+  return `${kTop('Tu cédula')}
+  <form class="pad" id="kDatosForm" novalidate>
+    ${kycProgress()}
+    ${kHead('Datos de tu cédula', 'Con estos dos datos el Registro Civil confirma que la cédula es tuya y está vigente, igual que en la banca en línea.')}
+    <div class="field"><label for="k-ced">Número de cédula</label>
+      <input class="input mono ${err ? 'bad' : ''}" id="k-ced" inputmode="numeric" maxlength="10" placeholder="10 dígitos" value="${esc(k.cedula)}">
+      <span class="hint ${err ? 'bad' : k.cedula.length === 10 ? 'good' : ''}" id="k-cedHint">${err || (k.cedula.length === 10 ? 'Número válido.' : 'Revisamos el dígito verificador mientras escribes.')}</span></div>
+    <div class="field"><label for="k-dac">Código dactilar</label>
+      <input class="input mono" id="k-dac" maxlength="10" placeholder="Ej: V4343V4242" value="${esc(k.dactilar)}" autocapitalize="characters">
+      <span class="hint ${k.dactilar && !dOk ? 'bad' : dOk ? 'good' : ''}" id="k-dacHint">${k.dactilar && !dOk ? 'Formato: letra, 4 números, letra, 4 números.' : dOk ? 'Formato correcto.' : 'Está en el reverso de tu cédula, junto a la huella.'}</span></div>
+    <div class="card" style="padding:10px">${cedulaBackSVG()}</div>
+    <button class="btn" type="submit">Continuar</button>
+    <button class="btn line" type="button" data-act="kSample">Usar datos de ejemplo</button>
+  </form>`;
+}
+function cedulaBackSVG() {
+  return `<svg viewBox="0 0 320 150" width="100%" role="img" aria-label="Dónde está el código dactilar en el reverso de la cédula">
+    <rect x="1" y="1" width="318" height="148" rx="12" fill="var(--surface)" stroke="var(--line)"/>
+    <text x="14" y="24" font-size="10" font-weight="700" fill="var(--muted)" font-family="var(--f-body)">REVERSO DE LA CÉDULA</text>
+    ${[40, 54, 68].map(y => `<rect x="14" y="${y}" width="150" height="6" rx="3" fill="var(--line)"/>`).join('')}
+    <rect x="232" y="30" width="70" height="80" rx="8" fill="var(--line)"/>
+    <text x="267" y="75" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="var(--f-body)">huella</text>
+    <rect x="160" y="96" width="146" height="40" rx="8" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="5 4"/>
+    <text x="168" y="111" font-size="8.5" font-weight="700" fill="var(--muted)" font-family="var(--f-body)">CÓDIGO DACTILAR</text>
+    <text x="168" y="128" font-size="13" font-weight="700" fill="var(--ink)" font-family="var(--f-mono)">V4343V4242</text>
+    ${[96, 108, 120].map(y => `<rect x="14" y="${y}" width="${y === 120 ? 90 : 130}" height="6" rx="3" fill="var(--line)"/>`).join('')}
+  </svg>`;
+}
+
+// Cámara: en el navegador real usa la cámara del celular; si no hay permiso, ofrece subir una foto o usar una muestra.
+const cam = { stream: null, facing: null, denied: false };
+async function startCam(facing) {
+  if (cam.denied) return;
+  if (cam.stream && cam.facing === facing) return attachCam();
+  stopCam();
+  try {
+    cam.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1280 } }, audio: false });
+    cam.facing = facing; attachCam();
+  } catch { cam.denied = true; const n = document.getElementById('camNote'); if (n) n.hidden = false; }
+}
+function attachCam() {
+  const v = document.getElementById('camVideo');
+  if (!v || !cam.stream) return;
+  v.srcObject = cam.stream; v.hidden = false; v.play().catch(() => {});
+  document.getElementById('camFallback')?.setAttribute('hidden', '');
+}
+function stopCam() { cam.stream?.getTracks().forEach(t => t.stop()); cam.stream = null; cam.facing = null; }
+function grabFrame(mirror) {
+  const v = document.getElementById('camVideo');
+  if (!cam.stream || !v || !v.videoWidth) return null;
+  const c = document.createElement('canvas'), w = 520; c.width = w; c.height = Math.round(v.videoHeight * w / v.videoWidth);
+  const x = c.getContext('2d'); if (mirror) { x.translate(w, 0); x.scale(-1, 1); }
+  x.drawImage(v, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', .72);
+}
+function downscale(file, cb) {
+  const fr = new FileReader();
+  fr.onload = () => { const img = new Image(); img.onload = () => { const c = document.createElement('canvas'), k = Math.min(1, 520 / Math.max(img.width, img.height)); c.width = img.width * k; c.height = img.height * k; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); cb(c.toDataURL('image/jpeg', .72)); }; img.src = fr.result; };
+  fr.readAsDataURL(file);
+}
+function cardOverlay() {
+  return `<svg class="cam-ov" viewBox="0 0 300 375" preserveAspectRatio="none" aria-hidden="true">
+    <path fill-rule="evenodd" fill="rgba(5,12,10,.55)" d="M0 0H300V375H0Z M30 120 a14 14 0 0 1 14 -14 H256 a14 14 0 0 1 14 14 V256 a14 14 0 0 1 -14 14 H44 a14 14 0 0 1 -14 -14Z"/>
+    <g stroke="var(--accent)" stroke-width="4" fill="none" stroke-linecap="round"><path d="M30 140V120a14 14 0 0 1 14-14h20M236 106h20a14 14 0 0 1 14 14v20M270 236v20a14 14 0 0 1-14 14h-20M64 270H44a14 14 0 0 1-14-14v-20"/></g>
+  </svg>`;
+}
+function ovalOverlay(pct) {
+  return `<svg class="cam-ov" viewBox="0 0 300 375" preserveAspectRatio="none" aria-hidden="true">
+    <path fill-rule="evenodd" fill="rgba(5,12,10,.6)" d="M0 0H300V375H0Z M150 60 a95 125 0 1 0 0.01 0Z"/>
+    <ellipse cx="150" cy="185" rx="95" ry="125" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="5"/>
+    <ellipse id="liveRing" cx="150" cy="185" rx="95" ry="125" fill="none" stroke="var(--brand)" stroke-width="6" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${100 - pct}" stroke-linecap="round" transform="rotate(-90 150 185)" style="transition:stroke-dashoffset .5s"/>
+  </svg>`;
+}
+const DOC_CHECKS = ['Se ven las 4 esquinas', 'Sin reflejos ni sombras', 'Texto legible', 'Documento original, no una foto de pantalla'];
+const LIVE_PROMPTS = ['Centra tu rostro en el óvalo', 'Parpadea dos veces', 'Gira la cabeza a la izquierda', 'Ahora a la derecha', 'Mira al frente y sonríe'];
+function kCamera() {
+  const k = S.kyc, side = k.step, img = k[side], selfie = side === 'selfie';
+  const title = { front: 'Frente de la cédula', back: 'Reverso de la cédula', selfie: 'Selfie con prueba de vida' }[side];
+  const sub = { front: 'Pon tu cédula sobre una superficie oscura, con buena luz. La foto se toma sola cuando está enfocada.', back: 'Ahora el lado del código dactilar y la huella.', selfie: 'Quítate gafas, gorra o mascarilla. Te pediremos unos movimientos para confirmar que eres una persona real.' }[side];
+  if (img) {
+    const checks = selfie ? ['Prueba de vida superada', 'Una sola persona en la imagen', 'Rostro descubierto y bien iluminado'] : DOC_CHECKS;
+    return `${kTop(title)}
+    <div class="pad">
+      ${kycProgress()}
+      ${kHead(selfie ? '¡Listo! Así quedó tu selfie' : 'Revisa que se lea bien', '')}
+      <div class="cam"><img class="shot ${selfie ? 'mirror-no' : ''}" src="${img}" alt="${esc(title)}"></div>
+      <div class="card list">${checks.map(c => `<div class="li" style="padding:8px 0"><div class="check-ico ok">${ic('check')}</div><span class="small">${c}</span></div>`).join('')}</div>
+      <div class="row"><button class="btn line" style="flex:1" data-act="kRetake">Repetir</button><button class="btn" style="flex:2" data-act="kNext">Usar esta foto</button></div>
+    </div>`;
+  }
+  const fallback = selfie
+    ? `<div class="cam-fb" id="camFallback"><svg viewBox="0 0 120 150" width="46%"><ellipse cx="60" cy="62" rx="34" ry="42" fill="#6c8a7f"/><ellipse cx="60" cy="160" rx="58" ry="46" fill="#6c8a7f"/></svg></div>`
+    : `<div class="cam-fb" id="camFallback"><svg viewBox="0 0 160 100" width="62%"><rect x="2" y="2" width="156" height="96" rx="10" fill="#6c8a7f"/><rect x="12" y="16" width="38" height="48" rx="4" fill="#4f6d62"/>${[18, 30, 42, 54].map(y => `<rect x="60" y="${y}" width="${y === 54 ? 50 : 84}" height="6" rx="3" fill="#4f6d62"/>`).join('')}</svg></div>`;
+  return `${kTop(title)}
   <div class="pad">
-    ${progress(3)}
-    <div><h2 style="font-size:22px">Una selfie para confirmar que eres tú</h2><p class="muted small" style="margin:4px 0 0">La comparamos con la foto de tu cédula. Solo el equipo de seguridad la ve.</p></div>
-    <div class="selfie ${u.selfie ? 'has' : ''}" style="${u.selfie ? `background-image:url(${u.selfie})` : ''}">${u.selfie ? '' : ic('camera', 'width="34" height="34"') + '<div>Sube una foto de tu rostro, sin gafas ni gorra</div>'}</div>
-    <label class="upload" for="selfieIn">${ic('upload')}<span>${u.selfie ? 'Cambiar foto' : 'Subir selfie'}</span><input type="file" accept="image/*" id="selfieIn"></label>
-    <button class="btn line" data-act="fakeSelfie">Usar foto de ejemplo</button>
-    <button class="btn" data-act="finishReg" ${u.selfie ? '' : 'disabled'}>Terminar registro</button>
+    ${kycProgress()}
+    ${kHead(title, sub)}
+    <div class="cam">
+      <video id="camVideo" playsinline muted autoplay hidden class="${selfie ? 'mirror' : ''}"></video>
+      ${fallback}
+      ${selfie ? ovalOverlay(0) : cardOverlay()}
+      <div class="cam-hint" id="livePrompt">${selfie ? (k.live ? LIVE_PROMPTS[0] : 'Pulsa Comenzar') : 'Encuadra la cédula dentro del marco'}</div>
+    </div>
+    <p class="hint" id="camNote" ${cam.denied ? '' : 'hidden'} style="margin:0;text-align:center">No hay acceso a la cámara en esta vista. ${selfie ? 'Usa la selfie de ejemplo para seguir la demo.' : 'Sube una foto o usa la de ejemplo.'}</p>
+    ${selfie
+      ? `<button class="btn" data-act="kLive" ${k.live ? 'disabled' : ''}>${k.live ? 'Sigue las instrucciones…' : 'Comenzar'}</button>
+         <span class="hint" style="text-align:center">La selfie debe tomarse en vivo. No se aceptan fotos de la galería.</span>`
+      : `<button class="btn" data-act="kShoot">${ic('camera')}Tomar foto</button>
+         <label class="upload" for="kFile">${ic('upload')}<span>Subir una foto</span><input type="file" accept="image/*" id="kFile"></label>`}
+    <button class="btn line" data-act="kSampleImg">Usar imagen de ejemplo</button>
   </div>`;
 }
-function cListo() {
+const PROF_SPECS = SPECS.slice(1);
+function kProf() {
+  const p = S.kyc.prof, ok = p.senescyt.trim().length >= 6 && p.msp.trim().length >= 4 && p.antecedentes && p.specs.length;
+  return `${kTop('Datos profesionales')}
+  <div class="pad">
+    ${kycProgress()}
+    ${kHead('Tu título y antecedentes', 'Los consultamos en SENESCYT y en el Ministerio de Salud. Un agente revisa todo antes de publicar tu perfil.')}
+    <div class="field"><label for="k-sen">Número de registro del título (SENESCYT)</label><input class="input mono" id="k-sen" value="${esc(p.senescyt)}" placeholder="Ej: 1027-2021-2384756"></div>
+    <div class="field"><label for="k-msp">Registro del título en el MSP</label><input class="input mono" id="k-msp" value="${esc(p.msp)}" placeholder="Ej: libro 3, folio 125"></div>
+    <div class="field"><span class="small" style="font-weight:600">Certificado de antecedentes penales</span>
+      <label class="upload" for="kAnte">${ic(p.antecedentes ? 'check' : 'upload')}<span>${p.antecedentes ? esc(p.antecedentes) : 'Subir PDF (Ministerio del Interior)'}</span><input type="file" accept="application/pdf,image/*" id="kAnte"></label>
+      <span class="hint">Lo pedimos de nuevo cada 6 meses.</span></div>
+    <div class="stack"><span class="small" style="font-weight:600">Especialidades</span><div class="tags">${PROF_SPECS.map(s => `<button class="chip" data-kspec="${s}" aria-pressed="${p.specs.includes(s)}">${s}</button>`).join('')}</div></div>
+    <div class="row"><div class="field grow"><label for="k-price">Precio por sesión (USD)</label><input class="input mono" id="k-price" inputmode="numeric" value="${p.price}"></div>
+      <div class="field grow"><label for="k-barrio">Sector base</label><select class="input" id="k-barrio">${['La Mariscal', 'Carcelén', 'Cumbayá', 'Tumbaco', 'Quitumbe', 'Conocoto', 'El Inca', 'Chillogallo'].map(b => `<option ${b === p.barrio ? 'selected' : ''}>${b}</option>`).join('')}</select></div></div>
+    <button class="btn" data-act="kNext" id="kProfBtn" ${ok ? '' : 'disabled'}>Enviar a verificación</button>
+    <button class="btn line" data-act="kSample">Usar datos de ejemplo</button>
+  </div>`;
+}
+function kycChecks(k) {
+  const f = k.forced, s = KYC_SAMPLE[k.who];
+  const list = [
+    { t: 'Leyendo tu cédula', ok: 'ok', d: `${s.name.toUpperCase()} · nació el ${s.born} · el número coincide` },
+    { t: 'Consultando el Registro Civil', ok: f === 'fail' ? 'fail' : 'ok', d: f === 'fail' ? 'El código dactilar no coincide con el registrado' : 'Cédula vigente · código dactilar coincide' },
+    { t: 'Comparando tu rostro', ok: f === 'review' ? 'warn' : 'ok', d: f === 'review' ? 'Coincidencia 78% con la foto de la cédula (mínimo 85%)' : 'Coincide 97% con la cédula y 96% con el Registro Civil' },
+    { t: 'Prueba de vida', ok: 'ok', d: 'Persona real: no es una foto, video ni máscara' },
+    { t: 'Revisando tu celular', ok: 'ok', d: 'Línea activa en Ecuador · sin emulador ni VPN' },
+  ];
+  if (k.who === 'fisio') list.push(
+    { t: 'Título en SENESCYT', ok: 'ok', d: 'Licenciatura en Terapia Física registrada' },
+    { t: 'Antecedentes penales', ok: 'ok', d: 'No registra antecedentes · emitido hace 3 días' });
+  return list;
+}
+let checkTimer;
+function kCheck() {
+  const k = S.kyc, list = kycChecks(k);
+  const st = { ok: ['ok', 'check'], warn: ['warn', 'alert'], fail: ['no', 'x'] };
+  return `<div class="topbar"><h2 style="padding-left:6px">Verificando</h2></div>
+  <div class="pad">
+    ${kycProgress()}
+    ${kHead('Estamos verificando tu identidad', 'Normalmente tarda menos de 30 segundos. No cierres la app.')}
+    <div class="card list">${list.map((c, i) => {
+      const done = i < k.checkIdx, cur = i === Math.max(0, k.checkIdx);
+      return `<div class="li">${done ? `<div class="check-ico ${st[c.ok][0]}">${ic(st[c.ok][1])}</div>` : cur ? '<div class="spinner sm"></div>' : '<div class="check-ico" style="border:2px solid var(--line)"></div>'}
+        <div class="grow" style="min-width:0"><b class="small ${done || cur ? '' : 'muted'}">${c.t}</b>${done ? `<div class="tiny muted">${c.d}</div>` : ''}</div></div>`;
+    }).join('')}</div>
+  </div>`;
+}
+function runChecks() {
+  const k = S.kyc, n = kycChecks(k).length;
+  const tick = () => {
+    if (view().name !== 'kyc' || S.kyc !== k || k.step !== 'check') { checkTimer = null; return; }
+    k.checkIdx++;
+    if (k.checkIdx >= n) { checkTimer = null; finishKyc(); return; }
+    save(); checkTimer = setTimeout(tick, 800); render();
+  };
+  if (k.checkIdx < 0) k.checkIdx = 0;
+  checkTimer = setTimeout(tick, 800);
+}
+function finishKyc() {
+  const k = S.kyc, s = KYC_SAMPLE[k.who];
+  k.result = k.forced;
+  if (k.who === 'cliente') {
+    S.user.kycStatus = k.forced;
+    if (k.forced === 'ok') Object.assign(S.user, { verified: true, name: s.name, cedula: k.cedula, phone: k.phone, selfie: k.selfie });
+  } else if (k.forced !== 'fail' && !S.queue.some(q => q.id === 'kyc-' + k.cedula)) {
+    S.queue.unshift({ id: 'kyc-' + k.cedula, name: s.name, hue: '#2F6F8C', barrio: k.prof.barrio, lat: -0.2040 + Math.random() * .02, lng: -78.49 + Math.random() * .02, cedula: k.cedula, uni: 'UCE', grad: 2021, specs: k.prof.specs, price: +k.prof.price || 25, years: 3,
+      docs: { senescyt: 'ok', msp: 'ok', antecedentes: 'ok', selfie: k.forced === 'review' ? 78 : 97 }, certs: [], selfieImg: k.selfie, frontImg: k.front, fromApp: true });
+  }
+  kycGo('result');
+}
+function kResult() {
+  const k = S.kyc, s = KYC_SAMPLE[k.who], fisio = k.who === 'fisio';
+  if (k.result === 'alt') return `<div class="pad" style="min-height:100%;justify-content:center;text-align:center">
+      <div class="check-ico warn" style="width:72px;height:72px;margin:0 auto">${ic('cal', 'style="width:34px;height:34px"')}</div>
+      <h2 style="font-size:24px">Videollamada agendada</h2><p class="muted" style="margin:0">${esc(k.altSlot)}. Ten tu cédula a la mano. Te avisamos por SMS 10 minutos antes.</p>
+      <button class="btn" data-act="kExit">Entendido</button></div>`;
+  if (k.result === 'fail') {
+    const left = 3 - k.attempts - 1;
+    return `<div class="pad" style="min-height:100%;justify-content:center;text-align:center">
+      <div class="check-ico no" style="width:72px;height:72px;margin:0 auto">${ic('x', 'style="width:34px;height:34px"')}</div>
+      <h2 style="font-size:24px">No pudimos verificar tu identidad</h2>
+      <p class="muted" style="margin:0">El código dactilar no coincide con el que tiene el Registro Civil para esa cédula. Revisa el reverso de tu cédula: son 10 caracteres, letra y números.</p>
+      ${left > 0 ? `<button class="btn" data-act="kRetry">Intentar de nuevo (${left} ${left === 1 ? 'intento' : 'intentos'})</button>` : '<div class="callout warn">' + ic('lock') + '<span>Por seguridad bloqueamos nuevos intentos por 24 horas.</span></div>'}
+      <button class="btn line" data-act="kAlt">Verificar con un agente</button></div>`;
+  }
+  if (k.result === 'review') return `<div class="pad" style="min-height:100%;justify-content:center;text-align:center">
+      <div class="check-ico warn" style="width:72px;height:72px;margin:0 auto">${ic('clock', 'style="width:34px;height:34px"')}</div>
+      <h2 style="font-size:24px">Un agente revisará tus datos</h2>
+      <p class="muted" style="margin:0">Tu selfie no coincidió lo suficiente con la foto de la cédula (puede ser por la luz o porque la foto de la cédula es antigua). Una persona del equipo lo revisa en menos de 2 horas.</p>
+      <div class="callout warn" style="text-align:left">${ic('alert')}<span>${fisio ? 'Tu perfil queda en revisión manual en el panel de Admin.' : 'Mientras tanto puedes explorar, pero no reservar.'}</span></div>
+      <button class="btn" data-act="kExit">${fisio ? 'Ver el panel de Admin' : 'Explorar mientras tanto'}</button></div>`;
   return `<div class="pad" style="min-height:100%;justify-content:center;text-align:center">
-    <div class="check-ico ok" style="width:72px;height:72px;margin:0 auto">${ic('shield', 'style="width:36px;height:36px"')}</div>
-    <h2 style="font-size:26px">Cuenta verificada</h2>
-    <p class="muted" style="margin:0">Cédula, celular y rostro confirmados. Ahora los especialistas verán la insignia de paciente verificado.</p>
-    <button class="btn" data-go="home">Buscar fisioterapeuta</button>
+    <div class="avatar lg" style="margin:0 auto;width:96px;height:96px;background:#59607A url(${k.selfie}) center/cover;border:3px solid var(--ok)"></div>
+    <h2 style="font-size:24px">${fisio ? 'Identidad verificada' : `¡Listo, ${esc(s.name.split(' ')[0])}!`}</h2>
+    <p class="muted" style="margin:0">${fisio ? 'Ahora el equipo revisa tu título y antecedentes. Te avisamos en 24 a 48 horas cuando tu perfil esté publicado.' : 'Tu cuenta está verificada. Los fisios verán la insignia de paciente verificado.'}</p>
+    <div class="card stack" style="text-align:left">
+      <span class="eyebrow">${fisio ? 'Lo que verán los pacientes' : 'Lo que ve el fisio antes de aceptar'}</span>
+      <div class="row"><div class="avatar sm" style="background:#59607A url(${k.selfie}) center/cover"></div><div class="grow"><b class="small">${esc(s.name.split(' ')[0])} ${esc(s.name.split(' ')[1][0])}.</b><div><span class="badge">${ic('shield')}Identidad verificada</span></div></div></div>
+      <span class="tiny muted">Nunca mostramos tu número de cédula, tu código dactilar ni tu teléfono.</span>
+    </div>
+    <button class="btn" data-act="kExit">${fisio ? 'Ver mi solicitud en Admin' : 'Buscar fisioterapeuta'}</button>
   </div>`;
 }
+function kycView() {
+  const k = S.kyc;
+  if (!k) return '';
+  if (['front', 'back', 'selfie'].includes(k.step)) return kCamera();
+  return ({ intro: kIntro, consent: kConsent, alt: kAlt, phone: kPhone, otp: kOtp, datos: kDatos, prof: kProf, check: kCheck, result: kResult })[k.step]();
+}
+let liveTimer;
+function runLiveness() {
+  const k = S.kyc; k.live = true; save(); render();
+  let i = 0;
+  const step = () => {
+    if (view().name !== 'kyc' || k.step !== 'selfie') return;
+    const p = document.getElementById('livePrompt'), ring = document.getElementById('liveRing');
+    if (i < LIVE_PROMPTS.length) {
+      if (p) p.textContent = LIVE_PROMPTS[i];
+      if (ring) ring.setAttribute('stroke-dashoffset', 100 - (i + 1) * 20);
+      i++; liveTimer = setTimeout(step, 1300);
+    } else {
+      k.selfie = grabFrame(true) || sampleSelfie(); k.live = false; save(); stopCam(); render();
+    }
+  };
+  liveTimer = setTimeout(step, 400);
+}
+function sampleCedula() {
+  const c = document.createElement('canvas'); c.width = 520; c.height = 650; const x = c.getContext('2d');
+  x.fillStyle = '#2B3431'; x.fillRect(0, 0, 520, 650);
+  x.save(); x.translate(260, 325); x.rotate(-0.03);
+  x.fillStyle = '#E8EFF2'; x.beginPath(); x.roundRect(-220, -140, 440, 280, 18); x.fill();
+  x.fillStyle = '#9DB7C4'; x.fillRect(-220, -140, 440, 46);
+  x.fillStyle = '#1C2B33'; x.font = '700 18px sans-serif'; x.fillText('DOCUMENTO DE EJEMPLO', -200, -110);
+  x.fillStyle = '#B9C7CE'; x.beginPath(); x.roundRect(-200, -76, 112, 140, 8); x.fill();
+  x.fillStyle = '#7d8f97'; x.beginPath(); x.arc(-144, -26, 30, 0, 7); x.fill(); x.beginPath(); x.ellipse(-144, 54, 46, 34, 0, Math.PI, 0); x.fill();
+  x.fillStyle = '#1C2B33'; x.font = '600 12px sans-serif';
+  [['APELLIDOS Y NOMBRES', 'PAREDES DANIELA', -70], ['N° DE DOCUMENTO', '171003406-5', -22], ['FECHA DE NACIMIENTO', '14 MAR 1994', 26]].forEach(([l, v, y]) => { x.fillStyle = '#5A6B72'; x.font = '600 11px sans-serif'; x.fillText(l, -70, y); x.fillStyle = '#1C2B33'; x.font = '700 16px monospace'; x.fillText(v, -70, y + 20); });
+  x.fillStyle = 'rgba(200,60,40,.35)'; x.font = '800 64px sans-serif'; x.rotate(-0.35); x.fillText('MUESTRA', -150, 60);
+  x.restore();
+  return c.toDataURL('image/jpeg', .75);
+}
+function sampleCedulaBack() {
+  const c = document.createElement('canvas'); c.width = 520; c.height = 650; const x = c.getContext('2d');
+  x.fillStyle = '#2B3431'; x.fillRect(0, 0, 520, 650);
+  x.save(); x.translate(260, 325); x.rotate(0.02);
+  x.fillStyle = '#E8EFF2'; x.beginPath(); x.roundRect(-220, -140, 440, 280, 18); x.fill();
+  x.fillStyle = '#B9C7CE'; x.beginPath(); x.roundRect(100, -110, 96, 120, 10); x.fill();
+  x.strokeStyle = '#7d8f97'; x.lineWidth = 2; for (let r = 8; r < 48; r += 6) { x.beginPath(); x.ellipse(148, -50, r * .8, r, 0, 0, 7); x.stroke(); }
+  x.fillStyle = '#5A6B72'; x.font = '600 11px sans-serif'; x.fillText('CÓDIGO DACTILAR', -200, 60);
+  x.fillStyle = '#1C2B33'; x.font = '700 22px monospace'; x.fillText('V4343V4242', -200, 88);
+  x.fillStyle = '#B9C7CE'; [-100, -80, -60, -40].forEach(y => x.fillRect(-200, y, 240, 8));
+  x.fillStyle = 'rgba(200,60,40,.35)'; x.font = '800 64px sans-serif'; x.rotate(-0.35); x.fillText('MUESTRA', -150, 60);
+  x.restore();
+  return c.toDataURL('image/jpeg', .75);
+}
+
+// ---------- Ubicación exacta (como Uber / Rappi: el pin se ajusta a la puerta) ----------
+function blockMap(pin, ok) {
+  const blocks = [];
+  for (const [x0, x1] of [[6, 56], [64, 112]]) for (const [y0, y1] of [[6, 50], [70, 112], [120, 174]]) blocks.push(`<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" rx="4" fill="var(--map-mount)"/>`);
+  for (const [y0, y1] of [[6, 50]]) for (const [x0, x1] of [[128, 196], [204, 262], [282, 334]]) blocks.push(`<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" rx="4" fill="var(--map-mount)"/>`);
+  for (const [y0, y1] of [[70, 112], [120, 174]]) blocks.push(`<rect x="282" y="${y0}" width="52" height="${y1 - y0}" rx="4" fill="var(--map-mount)"/>`);
+  return `<svg id="pinMap" viewBox="0 0 340 180" width="100%" role="img" aria-label="Mapa de la cuadra. Toca para mover el pin." style="display:block;cursor:crosshair;border-radius:12px;background:var(--map-land)">
+    ${blocks.join('')}
+    <rect x="128" y="70" width="134" height="104" rx="6" fill="var(--map-park)"/>
+    <text class="lbl" x="195" y="126" text-anchor="middle" style="font:600 9px var(--f-body);fill:var(--map-label);letter-spacing:.06em">PARQUE LA CAROLINA</text>
+    <rect x="116" y="0" width="10" height="180" fill="var(--map-road)" stroke="var(--map-road-edge)"/>
+    <rect x="268" y="0" width="10" height="180" fill="var(--map-road)" stroke="var(--map-road-edge)"/>
+    <rect x="0" y="56" width="340" height="10" fill="var(--map-road)" stroke="var(--map-road-edge)"/>
+    <text x="121" y="172" transform="rotate(-90 121 172)" style="font:700 7.5px var(--f-body);fill:var(--map-label)">AV. AMAZONAS</text>
+    <text x="273" y="172" transform="rotate(-90 273 172)" style="font:700 7.5px var(--f-body);fill:var(--map-label)">AV. DE LOS SHYRIS</text>
+    <text x="8" y="63.5" style="font:700 7.5px var(--f-body);fill:var(--map-label)">AV. NACIONES UNIDAS</text>
+    <circle cx="${pin.x}" cy="${pin.y}" r="${ok ? 10 : 22}" fill="var(--brand)" opacity=".16"/>
+    <g transform="translate(${pin.x},${pin.y})"><path d="M0 0 C-3 -5 -10 -8 -10 -15 A10 10 0 1 1 10 -15 C10 -8 3 -5 0 0Z" fill="var(--brand)" stroke="#fff" stroke-width="2"/><circle cy="-15" r="3.5" fill="#fff"/></g>
+  </svg>`;
+}
+
+// ---------- Rentabilidad ----------
+const BIZ_DEF = { fisios: 50, ses: 8, precio: 30, com: 15, fee: 0.99, pro: 20, nuevos: 300, mkt: 1500, equipo: 1200, infra: 350 };
+const BIZ_IN = [
+  ['fisios', 'Fisios activos', 10, 300, 5, v => v],
+  ['ses', 'Sesiones por fisio a la semana', 2, 25, 1, v => v],
+  ['precio', 'Precio promedio por sesión', 15, 60, 1, v => '$' + v],
+  ['com', 'Comisión de la plataforma', 5, 25, 1, v => v + '%'],
+  ['fee', 'Tarifa de servicio al paciente', 0, 2, 0.01, v => '$' + (+v).toFixed(2)],
+  ['pro', 'Fisios con plan Pro ($9.99/mes)', 0, 60, 5, v => v + '%'],
+  ['nuevos', 'Pacientes nuevos al mes', 50, 2000, 50, v => v],
+  ['mkt', 'Marketing al mes', 0, 5000, 100, v => '$' + v],
+  ['equipo', 'Soporte y seguridad 24/7 al mes', 0, 5000, 100, v => '$' + v],
+];
+const PASARELA = 0.045, KYC_PAC = 1.20, KYC_FIS = 4.00, INFRA = 350;
+function bizCalc(b) {
+  const sesiones = b.fisios * b.ses * 4.33, gmv = sesiones * b.precio;
+  const rCom = gmv * b.com / 100, rFee = sesiones * b.fee, rPro = b.fisios * b.pro / 100 * 9.99;
+  const ingresos = rCom + rFee + rPro;
+  const cPas = (gmv + rFee) * PASARELA, cKyc = b.nuevos * KYC_PAC + b.fisios * 0.1 * KYC_FIS;
+  const costos = cPas + cKyc + b.mkt + b.equipo + INFRA;
+  const porFisio = b.ses * 4.33 * (b.precio * b.com / 100 + b.fee - (b.precio + b.fee) * PASARELA) + b.pro / 100 * 9.99 - 0.1 * KYC_FIS;
+  const fijos = b.mkt + b.equipo + INFRA + b.nuevos * KYC_PAC;
+  return { sesiones, gmv, rCom, rFee, rPro, ingresos, cPas, cKyc, costos, util: ingresos - costos, equilibrio: porFisio > 0 ? Math.ceil(fijos / porFisio) : Infinity, porSesion: ingresos / sesiones };
+}
+const usd = n => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
+function bizOut() {
+  const b = S.biz, r = bizCalc(b), max = Math.max(r.ingresos, r.costos, 1);
+  const bar = (l, v, kind) => `<div class="bizrow"><span class="small">${l}</span><span class="bizbar"><i class="${kind}" style="width:${Math.max(1, v / max * 100).toFixed(1)}%"></i></span><b class="mono small">${usd(v)}</b></div>`;
+  const pos = r.util >= 0;
+  return `<div class="earn-hero" style="background:${pos ? 'var(--brand)' : 'var(--danger)'}">
+      <span class="small" style="opacity:.85">${pos ? 'Ganancia' : 'Pérdida'} mensual estimada</span><span class="big">${usd(r.util)}</span>
+      <span class="small" style="opacity:.85">${Math.round(r.sesiones).toLocaleString('en-US')} sesiones al mes · ${usd(r.gmv)} cobrados a pacientes · margen ${r.ingresos ? Math.round(r.util / r.ingresos * 100) : 0}% de los ingresos</span></div>
+    <div class="statrow">
+      <div class="stat"><b>${isFinite(r.equilibrio) ? r.equilibrio : '—'}</b><span>Fisios para no perder</span></div>
+      <div class="stat"><b>$${r.porSesion.toFixed(2)}</b><span>Ingreso por sesión</span></div>
+      <div class="stat"><b>$${KYC_PAC.toFixed(2)}</b><span>Verificar a un paciente</span></div>
+    </div>
+    <div class="card stack"><span class="eyebrow">Ingresos al mes</span>
+      ${bar('Comisión ' + b.com + '%', r.rCom, 'rev')}${bar('Tarifa de servicio', r.rFee, 'rev')}${bar('Plan Pro', r.rPro, 'rev')}
+      <div class="kv small" style="border-top:1px solid var(--line);padding-top:8px"><b>Total ingresos</b><b class="mono">${usd(r.ingresos)}</b></div></div>
+    <div class="card stack"><span class="eyebrow">Costos al mes</span>
+      ${bar('Pasarela de pagos 4.5%', r.cPas, 'cost')}${bar('Verificación de identidad', r.cKyc, 'cost')}${bar('Marketing', b.mkt, 'cost')}${bar('Soporte y seguridad', b.equipo, 'cost')}${bar('Servidores, mapas y SMS', INFRA, 'cost')}
+      <div class="kv small" style="border-top:1px solid var(--line);padding-top:8px"><b>Total costos</b><b class="mono">${usd(r.costos)}</b></div></div>`;
+}
+function aNegocio() {
+  const b = S.biz;
+  return `<div class="topbar"><h2 style="padding-left:6px">¿Es rentable?</h2><button class="btn small ghost" data-act="bizReset">Restablecer</button></div>
+  <div class="pad">
+    <p class="small muted" style="margin:0">Mueve los valores y mira la ganancia mensual. Costos de verificación: $${KYC_PAC.toFixed(2)} por paciente y $${KYC_FIS.toFixed(2)} por fisio (documento, prueba de vida, comparación facial y consulta al Registro Civil). Valores referenciales, sin IVA.</p>
+    <div id="bizOut" class="stack" style="gap:12px">${bizOut()}</div>
+    <div class="card stack">${BIZ_IN.map(([k, l, mn, mx, st, f]) => `<div class="field"><div class="row"><label class="grow" for="biz-${k}">${l}</label><b class="mono small" id="bizv-${k}">${f(b[k])}</b></div><input type="range" id="biz-${k}" min="${mn}" max="${mx}" step="${st}" value="${b[k]}"></div>`).join('')}</div>
+    <div class="card stack small"><b>Otras palancas de ingreso</b>
+      <span>· <b>Paquetes de 5 o 10 sesiones</b> pagados por adelantado: el paciente no se va de la app.</span>
+      <span>· <b>Cuota de verificación del fisio</b> ($10, reembolsable tras 10 sesiones): cubre su revisión y filtra perfiles poco serios.</span>
+      <span>· <b>Comisión más baja en pacientes recurrentes</b>: al fisio le conviene más quedarse que cobrar por fuera.</span>
+      <span>· <b>Convenios</b> con clubes deportivos, gimnasios y seguros de salud privados.</span></div>
+  </div>`;
+}
+function bizInput(t) {
+  const k = t.id.slice(4), def = BIZ_IN.find(x => x[0] === k);
+  S.biz[k] = +t.value; save();
+  document.getElementById('bizv-' + k).textContent = def[5](S.biz[k]);
+  document.getElementById('bizOut').innerHTML = bizOut();
+}
+
+// ---------- Modales de seguridad ----------
+function rtidModal() {
+  modal(`<div class="row"><div class="check-ico ok" style="width:44px;height:44px;background:var(--brand-soft);color:var(--brand)">${ic('camera', 'style="width:22px;height:22px"')}</div><h2 class="grow" style="font-size:20px">Confirma que eres tú</h2></div>
+    <p class="small" style="margin:0">Antes de conectarte cada día te pedimos una selfie rápida. La comparamos con tu foto verificada para que nadie más use tu cuenta.</p>
+    <div id="rtidState" class="callout">${ic('shield')}<span>Toma 3 segundos.</span></div>
+    <button class="btn" data-act="rtidShoot" id="rtidBtn">${ic('camera')}Tomar selfie</button><button class="btn line" data-act="closeModal">Ahora no</button>`);
+}
+function doorMismatchModal() {
+  modal(`<div class="row"><div class="check-ico no" style="width:44px;height:44px">${ic('alert', 'style="width:22px;height:22px"')}</div><h2 class="grow" style="font-size:20px">No abras la puerta</h2></div>
+    <p class="small" style="margin:0">Cancelamos la cita, suspendemos la cuenta del especialista mientras investigamos y el equipo de seguridad te llama ahora. Si te sientes en peligro, llama al <b class="mono">911</b>.</p>
+    <div class="callout warn">${ic('alert')}<span>Demo: nadie será contactado.</span></div>
+    <button class="btn danger" data-act="doorReport">Reportar y cancelar la cita</button><button class="btn line" data-act="closeModal">Volver</button>`);
+}
+function longSessionModal() {
+  modal(`<div class="row"><div class="check-ico warn" style="width:44px;height:44px">${ic('clock', 'style="width:22px;height:22px"')}</div><h2 class="grow" style="font-size:20px">¿Todo está bien?</h2></div>
+    <p class="small" style="margin:0">La sesión ya pasó de 90 minutos. Les preguntamos a los dos por seguridad. También preguntamos si el celular del especialista se aleja más de 300 m de la dirección durante la sesión.</p>
+    <button class="btn" data-act="closeModal">Sí, todo bien</button><button class="btn danger" data-act="sos">Necesito ayuda</button>`);
+}
+
 function cHome() {
   const list = allFisios()
     .filter(f => S.filter === 'Todas' || f.specs.includes(S.filter))
@@ -658,13 +1098,18 @@ const taken = (fid, day, slot) => ((fid.charCodeAt(1) * 7 + day * 13 + slot * 5)
 function cBook() {
   const d = S.draft, f = fisioById(d.fisioId);
   const ds = days();
-  const ok = d.time != null && d.motivo.trim().length > 4 && d.address.trim().length > 4;
+  const ok = d.time != null && d.motivo.trim().length > 4 && d.address.trim().length > 4 && d.pinOk;
   return `${topbar('Reservar sesión', 'profile')}
   <div class="pad">
     <div class="row">${av(f, 'sm')}<div class="grow"><b>${esc(f.name)}</b><div class="small muted">${esc(f.specs.join(' · '))}</div></div><b class="mono">$${f.price}</b></div>
     <div class="stack"><span class="h-sec">Día</span><div class="days">${ds.map(x => `<button class="day" data-day="${x.key}" aria-pressed="${d.day === x.key}"><span>${x.lbl}</span><b>${x.n}</b></button>`).join('')}</div></div>
     <div class="stack"><span class="h-sec">Hora</span><div class="slots">${SLOTS.map((s, i) => `<button class="slot" data-slot="${i}" aria-pressed="${d.time === i}" ${taken(f.id, d.day, i) ? 'disabled' : ''}>${s}</button>`).join('')}</div></div>
     <div class="field"><label for="b-addr">Dirección de la visita</label><input class="input" id="b-addr" value="${esc(d.address)}"><span class="hint">Solo el especialista que acepte verá la dirección exacta.</span></div>
+    <div class="card stack" style="padding:10px">
+      <div class="row"><b class="small grow">${d.pinOk ? 'Punto exacto confirmado' : 'Ajusta el pin a tu puerta'}</b>${d.pinOk ? `<span class="badge">${ic('check')}Listo</span>` : '<span class="badge warn">GPS ±25 m</span>'}</div>
+      ${blockMap(d.pin, d.pinOk)}
+      ${d.pinOk ? '<span class="tiny muted">El fisio solo podrá marcar «Llegué» cuando esté a menos de 150 m de este punto.</span>' : '<span class="tiny muted">Toca el mapa donde está tu entrada. Así el fisio no se pierde y la app puede comprobar que realmente llegó.</span><button class="btn small ghost" data-act="pinConfirm">Confirmar ubicación</button>'}
+    </div>
     <div class="field"><label for="b-ref">Referencia (opcional)</label><input class="input" id="b-ref" value="${esc(d.ref)}" placeholder="Ej: edificio azul, timbre 3B"></div>
     <div class="field"><label for="b-mot">¿Qué te pasa?</label><textarea class="input" id="b-mot" placeholder="Ej: dolor de rodilla derecha después de correr, hace 2 semanas">${esc(d.motivo)}</textarea></div>
     <div class="stack"><span class="h-sec">Pago</span>
@@ -673,12 +1118,12 @@ function cBook() {
     </div>
     <div class="card money">
       <span>Sesión de fisioterapia (60 min)</span><b>${money(f.price)}</b>
-      <span>Tarifa de servicio</span><b>$0.00</b>
-      <span class="tot">Total</span><b class="tot">${money(f.price)}</b>
+      <span>Tarifa de servicio</span><b>${money(FEE)}</b>
+      <span class="tot">Total</span><b class="tot">${money(f.price + FEE)}</b>
     </div>
-    <div class="callout">${ic('lock')}<span>Retenemos ${money(f.price)} ahora y lo cobramos solo cuando la sesión termine. Si el fisio no confirma, se libera de inmediato.</span></div>
+    <div class="callout">${ic('lock')}<span>Retenemos ${money(f.price + FEE)} ahora y lo cobramos solo cuando la sesión termine. Si el fisio no confirma, se libera de inmediato.</span></div>
     <button class="btn" data-act="confirmBook" ${ok ? '' : 'disabled'}>Solicitar a ${esc(f.name.split(' ')[0])}</button>
-    ${ok ? '' : '<span class="hint" style="text-align:center">Elige una hora y cuéntanos el motivo para continuar.</span>'}
+    ${ok ? '' : '<span class="hint" style="text-align:center">Elige una hora, confirma tu ubicación y cuéntanos el motivo para continuar.</span>'}
   </div>`;
 }
 function statusText(b) {
@@ -707,14 +1152,19 @@ function cActiva() {
     ${pin}${share}
     <button class="btn ghost" data-act="simDepart">Simular: el fisio sale hacia tu casa</button>`;
   if (b.status === 'en_camino') body = `<div class="card" style="padding:0;overflow:hidden">${mapSVG({ fisios: [], route: f, progress: .55, height: 210 })}</div>
-    <div class="statusline"><div class="grow"><b style="font-size:18px">Llega en ${Math.max(3, Math.round(eta(dist(ME, f)) * .45))} min</b><div class="small muted">Auto · Chevrolet Sail gris · PCX-4821</div></div></div>
+    <div class="statusline"><div class="grow"><b style="font-size:18px">Llega en ${Math.max(2, Math.round(eta(b.distLeft ?? 2) - 4))} min · ${(b.distLeft ?? 2).toFixed(1)} km</b><div class="small muted">Auto · Chevrolet Sail gris · PCX-4821</div></div></div>
     ${head}${pin}${share}${sos}
     <button class="btn ghost" data-act="simArrive">Simular: llegó a tu puerta</button>`;
-  if (b.status === 'llego') body = `<div class="callout">${ic('home')}<span><b>${esc(f.name.split(' ')[0])} está en tu puerta.</b> Confirma que es la persona de la foto y dale tu PIN.</span></div>
+  if (b.status === 'llego') body = b.doorOk ? `<div class="callout">${ic('check')}<span>Confirmaste que es ${esc(f.name.split(' ')[0])}. Dale tu PIN para empezar.</span></div>
     ${head}${pin}${sos}
-    <button class="btn ghost" data-act="simPin">Simular: ingresó el PIN correcto</button>`;
+    <button class="btn ghost" data-act="simPin">Simular: ingresó el PIN correcto</button>` : `<div class="card door">
+      <span class="eyebrow">Antes de abrir</span>${av(f, 'lg')}<b style="font-size:18px">${esc(f.name)}</b><span class="badge">${ic('shield')}Selfie verificada hoy a las 07:52</span>
+      <span class="small">¿La persona en tu puerta es la misma de esta foto?</span>
+      <div class="row" style="width:100%"><button class="btn line small" style="flex:1" data-act="doorNo">No es</button><button class="btn small" style="flex:2" data-act="doorOk">Sí, es la persona del perfil</button></div></div>
+    <span class="hint" style="text-align:center">Tu PIN aparece cuando confirmes.</span>${sos}`;
   if (b.status === 'en_curso') body = `<div class="card stack" style="text-align:center;padding:22px 14px"><span class="eyebrow">Sesión en curso</span><div class="timer" id="timer">00:00</div><span class="small muted">Comenzó a las ${esc(b.startedLabel || '')}. Tu contacto de confianza puede ver que la sesión está activa.</span></div>
     ${head}${sos}
+    <button class="btn line" data-act="longSession">Simular: la sesión pasó de 90 min</button>
     <button class="btn ghost" data-act="simFinish">Simular: el fisio termina la sesión</button>`;
   return `${topbar('Tu cita', 'home')}<div class="pad">${steps}<div><h2 style="font-size:21px">${esc(statusText(b))}</h2></div>${body}</div>`;
 }
@@ -728,7 +1178,7 @@ function cRate(b, f) {
     <div class="tags" style="justify-content:center">${TAGS.map(t => `<button class="chip" data-tag="${t}" aria-pressed="${r.tags.includes(t)}">${t}</button>`).join('')}</div>
     <div class="field"><label for="r-text">Comentario</label><textarea class="input" id="r-text" placeholder="Cuéntanos tu experiencia">${esc(r.text)}</textarea></div>
     <div class="stack"><span class="small" style="font-weight:600">Propina (100% para el especialista)</span><div class="tags">${[0, 2, 3, 5].map(t => `<button class="chip" data-tip="${t}" aria-pressed="${r.tip === t}">${t ? '$' + t : 'Sin propina'}</button>`).join('')}</div></div>
-    <div class="card money"><span>Sesión</span><b>${money(b.price)}</b>${r.tip ? `<span>Propina</span><b>${money(r.tip)}</b>` : ''}<span class="tot">Cobrado a Visa •••• 4242</span><b class="tot">${money(b.price + r.tip)}</b></div>
+    <div class="card money"><span>Sesión</span><b>${money(b.price)}</b><span>Tarifa de servicio</span><b>${money(FEE)}</b>${r.tip ? `<span>Propina</span><b>${money(r.tip)}</b>` : ''}<span class="tot">Cobrado a Visa •••• 4242</span><b class="tot">${money(b.price + FEE + r.tip)}</b></div>
     <button class="btn" data-act="sendRating" ${r.s ? '' : 'disabled'}>Enviar calificación</button>
   </div>`;
 }
@@ -739,28 +1189,27 @@ function cCitas() {
     : `<div class="empty">${ic('cal')}<span>Aún no tienes citas. Busca un especialista cerca de ti.</span><button class="btn small" data-go="home">Explorar</button></div>`}</div>`;
 }
 function cPerfil() {
-  const u = S.user;
+  const u = S.user, st = u.kycStatus, ok = st === 'ok';
+  const label = { none: 'Sin verificar', review: 'En revisión manual', fail: 'No verificada', alt: 'Videollamada agendada', ok: 'Identidad verificada' }[st];
+  const rows = [['Celular', ok ? '+593 ' + esc(u.phone) : 'Pendiente'], ['Cédula y Registro Civil', ok ? esc(u.cedula.slice(0, 2) + '••••••' + u.cedula.slice(8)) + ' · vigente' : 'Pendiente'], ['Rostro y prueba de vida', ok ? 'Coincide con tu cédula' : 'Pendiente']];
   return `<div class="topbar"><h2 style="padding-left:6px">Mi cuenta</h2></div>
   <div class="pad">
-    <div class="row"><div class="avatar lg" style="background:#59607A;${u.selfie ? `background-image:url(${u.selfie})` : ''}">${u.selfie ? '' : esc(initials(u.name))}</div><div class="grow"><h2 style="font-size:20px">${esc(u.name)}</h2>${u.verified ? `<span class="badge">${ic('shield')}Paciente verificado</span>` : '<span class="badge warn">Sin verificar</span>'}</div></div>
-    <div class="card list">
-      <div class="li"><div class="check-ico ${u.verified ? 'ok' : 'warn'}">${ic(u.verified ? 'check' : 'alert')}</div><div class="grow"><b class="small">Cédula</b><div class="tiny muted mono">${u.cedula ? esc(u.cedula.slice(0, 2) + '••••••' + u.cedula.slice(8)) : 'Pendiente'}</div></div></div>
-      <div class="li"><div class="check-ico ${u.verified ? 'ok' : 'warn'}">${ic(u.verified ? 'check' : 'alert')}</div><div class="grow"><b class="small">Celular</b><div class="tiny muted mono">${u.phone ? '+593 ' + esc(u.phone) : 'Pendiente'}</div></div></div>
-      <div class="li"><div class="check-ico ${u.selfie ? 'ok' : 'warn'}">${ic(u.selfie ? 'check' : 'alert')}</div><div class="grow"><b class="small">Rostro</b><div class="tiny muted">${u.selfie ? 'Coincide con la cédula' : 'Pendiente'}</div></div></div>
-    </div>
-    ${u.verified ? '' : '<button class="btn" data-go="registro">Verificar mi cuenta</button>'}
+    <div class="row"><div class="avatar lg" style="background:#59607A;${u.selfie ? `background-image:url(${u.selfie})` : ''}">${u.selfie ? '' : esc(initials(u.name))}</div><div class="grow"><h2 style="font-size:20px">${esc(u.name)}</h2><span class="badge ${ok ? '' : 'warn'}">${ok ? ic('shield') : ''}${label}</span></div></div>
+    <div class="card list">${rows.map(([t, d]) => `<div class="li"><div class="check-ico ${ok ? 'ok' : 'warn'}">${ic(ok ? 'check' : 'alert')}</div><div class="grow"><b class="small">${t}</b><div class="tiny muted mono">${d}</div></div></div>`).join('')}</div>
+    ${ok ? '' : '<button class="btn" data-act="kStartCliente">Verificar mi identidad</button>'}
     <div class="stack"><span class="h-sec">Seguridad</span>
       <div class="card list"><div class="li">${ic('heart', 'width="20" height="20"')}<div class="grow"><b class="small">Contacto de confianza</b><div class="tiny muted">${esc(u.contacto)}</div></div></div>
-      <div class="li">${ic('lock', 'width="20" height="20"')}<div class="grow"><b class="small">Número enmascarado</b><div class="tiny muted">Las llamadas pasan por la app</div></div><span class="badge">Activo</span></div></div></div>
+      <div class="li">${ic('lock', 'width="20" height="20"')}<div class="grow"><b class="small">Número enmascarado</b><div class="tiny muted">Las llamadas pasan por la app</div></div><span class="badge">Activo</span></div>
+      <div class="li">${ic('pin', 'width="20" height="20"')}<div class="grow"><b class="small">Ubicación</b><div class="tiny muted">Solo se comparte durante una cita activa</div></div></div></div></div>
     <div class="stack"><span class="h-sec">Pagos</span><div class="card list"><div class="li">${ic('wallet', 'width="20" height="20"')}<div class="grow"><b class="small">Visa •••• 4242</b><div class="tiny muted">Predeterminada</div></div></div></div></div>
-    <p class="tiny muted">Tus datos de salud se tratan según la Ley Orgánica de Protección de Datos Personales del Ecuador. Puedes pedir su eliminación en cualquier momento.</p>
+    <p class="tiny muted">Tus datos de salud y tu rostro se tratan según la Ley Orgánica de Protección de Datos Personales del Ecuador. Puedes pedir su eliminación en cualquier momento.</p>
   </div>`;
 }
 
 // ---------- Fisio ----------
 const myId = 'f1';
 function fisioRequests() {
-  const reqs = S.bookings.filter(b => b.fisioId === myId).map(b => ({ ...b, client: { name: S.user.name, initials: initials(S.user.name), hue: '#59607A', rating: 5.0, sessions: S.bookings.filter(x => x.status === 'completada').length, verified: S.user.verified }, barrio: 'La Carolina', dist: dist(ME, fisioById(myId)) }));
+  const reqs = S.bookings.filter(b => b.fisioId === myId).map(b => ({ ...b, client: { name: S.user.name, initials: initials(S.user.name), hue: '#59607A', rating: 5.0, sessions: S.bookings.filter(x => x.status === 'completada').length, verified: S.user.kycStatus === 'ok' }, barrio: 'La Carolina', dist: dist(ME, fisioById(myId)) }));
   return [S.seedReq, ...reqs];
 }
 function fInicio() {
@@ -773,7 +1222,7 @@ function fInicio() {
   <div class="pad">
     <div class="toggle"><div><b>${S.fisio.available ? 'Estás disponible' : 'No disponible'}</b><div class="small muted">${S.fisio.available ? `Recibes solicitudes en ${me.radius} km alrededor de ${esc(me.barrio)}` : 'No aparecerás en las búsquedas'}</div></div><button class="switch" role="switch" aria-checked="${S.fisio.available}" aria-label="Disponible" data-act="toggleAvail"></button></div>
     ${pend.length ? `<span class="h-sec">Solicitudes nuevas</span>` + pend.map(r => reqCard(r)).join('') : `<div class="card empty" style="padding:20px">${ic('inbox')}<span>Sin solicitudes nuevas. Reserva con Andrea desde la vista Paciente para ver una llegar aquí.</span></div>`}
-    ${act.length ? `<span class="h-sec">Citas activas</span>` + act.map(r => `<button class="pcard" data-fbook="${r.id}"><div class="avatar sm" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="meta"><span class="name">${esc(r.client.name)}</span><span class="sub">${esc(r.date)} · ${esc(r.time)} · ${esc(r.barrio)}</span></div><span class="badge warn">${({ confirmada: 'Confirmada', en_camino: 'En camino', llego: 'Ingresar PIN', en_curso: 'En curso' })[r.status]}</span></button>`).join('') : ''}
+    ${act.length ? `<span class="h-sec">Citas activas</span>` + act.map(r => `<button class="pcard" data-fbook="${r.id}"><div class="avatar sm" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="meta"><span class="name">${esc(shortName(r.client.name))}</span><span class="sub">${esc(r.date)} · ${esc(r.time)} · ${esc(r.barrio)}</span></div><span class="badge warn">${({ confirmada: 'Confirmada', en_camino: 'En camino', llego: 'Ingresar PIN', en_curso: 'En curso' })[r.status]}</span></button>`).join('') : ''}
     <div class="card row"><div class="grow"><span class="small muted">Ganado esta semana (neto)</span><div class="mono" style="font-size:22px;font-weight:700">${money(today)}</div></div><button class="btn small ghost" data-go="ganancias">Ver detalle</button></div>
   </div>`;
 }
@@ -781,7 +1230,7 @@ function reqCard(r) {
   const l = liquidar(r.price);
   return `<div class="card request stack">
     <div class="row"><span class="badge warn">${ic('clock')}Nueva solicitud</span><span class="grow"></span><span class="countdown small">Responde en 29:12</span></div>
-    <div class="row"><div class="avatar" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="grow"><b>${esc(r.client.name)}</b><div class="small">${r.client.verified ? `<span class="badge">${ic('shield')}Verificado: cédula + rostro</span>` : '<span class="badge warn">Sin verificar</span>'}</div></div><div style="text-align:right">${starsTxt(r.client.rating)}<div class="tiny muted">${r.client.sessions} sesiones</div></div></div>
+    <div class="row"><div class="avatar" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="grow"><b>${esc(shortName(r.client.name))}</b><div class="small">${r.client.verified ? `<span class="badge">${ic('shield')}Identidad verificada</span>` : '<span class="badge warn">Sin verificar</span>'}</div></div><div style="text-align:right">${starsTxt(r.client.rating)}<div class="tiny muted">${r.client.sessions} sesiones</div></div></div>
     <div class="kv small"><span class="muted">Cuándo</span><b>${esc(r.date)}, ${esc(r.time)}</b></div>
     <div class="kv small"><span class="muted">Zona</span><b>${esc(r.barrio)} · ${r.dist.toFixed(1)} km</b></div>
     <div class="small"><span class="muted">Motivo: </span>${esc(r.motivo)}</div>
@@ -797,17 +1246,22 @@ function fBooking(id) {
   if (real.status === 'completada') return fRateClient(real, r);
   let body = '';
   if (r.status === 'confirmada') body = `<button class="btn" data-act="fDepart" data-id="${id}">${ic('car')}Iniciar viaje</button><span class="hint" style="text-align:center">El paciente verá tu ubicación en tiempo real.</span>`;
-  if (r.status === 'en_camino') body = `<div class="card" style="padding:0;overflow:hidden">${mapSVG({ fisios: [], route: fisioById(myId), progress: .55, height: 200 })}</div><button class="btn" data-act="fArrive" data-id="${id}">${ic('home')}Llegué a la dirección</button>`;
+  if (r.status === 'en_camino') { const left = real.distLeft ?? 1.4, near = left <= 0.15;
+    body = `<div class="card" style="padding:0;overflow:hidden">${mapSVG({ fisios: [], route: fisioById(myId), progress: Math.min(.95, 1 - left / 3), height: 200 })}</div>
+    <div class="card row"><div class="grow"><b>${left < 1 ? Math.round(left * 1000) + ' m' : left.toFixed(1) + ' km'}</b><div class="tiny muted">hasta el punto que marcó el paciente</div></div>${near ? `<span class="badge">${ic('check')}Dentro de 150 m</span>` : `<button class="btn small ghost" data-act="fAdvance" data-id="${id}">Avanzar (simulado)</button>`}</div>
+    <button class="btn" data-act="fArrive" data-id="${id}" ${near ? '' : 'disabled'}>${ic('home')}Llegué a la dirección</button>
+    <span class="hint" style="text-align:center">${near ? 'Al marcar «Llegué», el paciente recibe tu foto para confirmar que eres tú.' : 'Se activa cuando tu GPS está a menos de 150 m. Así el paciente sabe que realmente llegaste.'}</span>`; }
   if (r.status === 'llego') body = `<div class="card stack" style="text-align:center"><b>Pide el PIN de 4 dígitos al paciente</b><span class="small muted">Confirma que es la persona de la foto antes de entrar.</span>
     <div class="pininput">${[0, 1, 2, 3].map(i => `<input id="pin${i}" inputmode="numeric" maxlength="1" aria-label="Dígito ${i + 1}">`).join('')}</div>
     <span class="hint" id="pinHint">${real.seed ? `Demo: el PIN de este paciente es ${real.pin}.` : 'El PIN aparece en la vista Paciente.'}</span></div>
     <button class="btn" data-act="fCheckPin" data-id="${id}">Iniciar sesión</button>`;
   if (r.status === 'en_curso') body = `<div class="card stack" style="text-align:center;padding:22px 14px"><span class="eyebrow">Sesión en curso</span><div class="timer" id="timer">00:00</div></div>
     <div class="field"><label for="f-notes">Notas clínicas (privadas)</label><textarea class="input" id="f-notes" placeholder="Evaluación, tratamiento aplicado, ejercicios indicados"></textarea><span class="hint">Se guardan en el expediente del paciente. Solo tú y el paciente pueden verlas.</span></div>
-    <button class="btn" data-act="fFinish" data-id="${id}">Finalizar sesión y cobrar</button>`;
+    <button class="btn" data-act="fFinish" data-id="${id}">Finalizar sesión y cobrar</button>
+    <button class="btn line" data-act="longSession">Simular: la sesión pasó de 90 min</button>`;
   return `${topbar('Cita con ' + r.client.name.split(' ')[0], 'inicio')}
   <div class="pad">
-    <div class="row"><div class="avatar" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="grow"><b>${esc(r.client.name)}</b><div class="small muted">${starsTxt(r.client.rating)} · ${r.client.verified ? 'Verificado' : 'Sin verificar'}</div></div><button class="iconbtn" data-act="openChat" aria-label="Chat">${ic('chat')}</button><button class="iconbtn" data-act="call" aria-label="Llamar">${ic('phone')}</button></div>
+    <div class="row"><div class="avatar" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="grow"><b>${esc(shortName(r.client.name))}</b><div class="small muted">${starsTxt(r.client.rating)} · ${r.client.verified ? 'Verificado' : 'Sin verificar'}</div></div><button class="iconbtn" data-act="openChat" aria-label="Chat">${ic('chat')}</button><button class="iconbtn" data-act="call" aria-label="Llamar">${ic('phone')}</button></div>
     <div class="card stack"><div class="kv small"><span class="muted">Cuándo</span><b>${esc(r.date)}, ${esc(r.time)}</b></div><div class="kv small"><span class="muted">Dirección</span><b style="text-align:right">${esc(r.address)}</b></div>${r.ref ? `<div class="kv small"><span class="muted">Referencia</span><b style="text-align:right">${esc(r.ref)}</b></div>` : ''}<div class="small"><span class="muted">Motivo: </span>${esc(r.motivo)}</div></div>
     ${body}
     <button class="sos" data-act="sos">${ic('alert')}<span><span style="display:block">Botón de emergencia</span><span class="tiny" style="font-weight:500">Comparte tu ubicación con seguridad y muestra el ECU 911</span></span></button>
@@ -831,7 +1285,7 @@ function fAgenda() {
   const reqs = fisioRequests().filter(r => !['rechazada', 'cancelada'].includes(r.status));
   return `<div class="topbar"><h2 style="padding-left:6px">Agenda</h2></div>
   <div class="pad">
-    ${reqs.map(r => `<button class="pcard" data-fbook="${r.id}"><div class="avatar sm" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="meta"><span class="name">${esc(r.client.name)}</span><span class="sub">${esc(r.date)} · ${esc(r.time)} · ${esc(r.barrio)}</span></div><span class="badge ${r.status === 'completada' ? '' : 'warn'}">${({ pendiente: 'Por aceptar', confirmada: 'Confirmada', en_camino: 'En camino', llego: 'En puerta', en_curso: 'En curso', completada: 'Completada' })[r.status]}</span></button>`).join('')}
+    ${reqs.map(r => `<button class="pcard" data-fbook="${r.id}"><div class="avatar sm" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="meta"><span class="name">${esc(shortName(r.client.name))}</span><span class="sub">${esc(r.date)} · ${esc(r.time)} · ${esc(r.barrio)}</span></div><span class="badge ${r.status === 'completada' ? '' : 'warn'}">${({ pendiente: 'Por aceptar', confirmada: 'Confirmada', en_camino: 'En camino', llego: 'En puerta', en_curso: 'En curso', completada: 'Completada' })[r.status]}</span></button>`).join('')}
     <div class="card stack"><span class="h-sec">Horario semanal</span>${['Lunes a viernes · 08:00 a 20:00', 'Sábado · 09:00 a 13:00', 'Domingo · No disponible'].map(t => `<span class="small">${t}</span>`).join('')}<span class="tiny muted">El paciente solo ve los horarios libres dentro de tu zona de cobertura.</span></div>
   </div>`;
 }
@@ -863,6 +1317,7 @@ function fPerfil() {
     </div>
     <label class="upload" for="certIn">${ic('upload')}<span>Subir certificado (PDF o foto)</span><input type="file" accept="image/*,application/pdf" id="certIn"></label>
     <span class="hint">El equipo revisa cada certificado en 24 a 48 horas antes de mostrarlo como verificado.</span></div>
+    <div class="card stack" style="border-style:dashed"><b class="small">¿Cómo se registra un fisio nuevo?</b><span class="tiny muted">Recorre el mismo proceso que haría un colega del grupo: identidad tipo banco más documentos profesionales. Al final aparece en el panel de Admin.</span><button class="btn small ghost" data-act="kStartFisio">Probar el registro de un fisio nuevo</button></div>
     <div class="stack"><span class="h-sec">Servicio</span><div class="card list">
       <div class="li"><div class="grow small">Precio por sesión</div><b class="mono">$${me.price}</b></div>
       <div class="li"><div class="grow small">Zona de cobertura</div><b>${me.radius} km · ${esc(me.barrio)}</b></div>
@@ -874,7 +1329,7 @@ function fPerfil() {
 function aCola() {
   const pend = S.queue;
   const alerts = S.alerts;
-  const label = { ok: ['ok', 'check', 'Verificado'], pend: ['warn', 'clock', 'Pendiente'], no: ['no', 'x', 'No presentado'], bad: ['no', 'x', 'Inválida'] };
+  const label = { ok: ['ok', 'check', 'Verificado'], pend: ['warn', 'clock', 'Pendiente'], no: ['no', 'x', 'No presentado'], bad: ['no', 'x', 'Inválida'], rev: ['warn', 'alert', 'Revisar a mano'] };
   return `<div class="topbar"><h2 style="padding-left:6px">Panel de verificación</h2></div>
   <div class="pad">
     <div class="statrow"><div class="stat"><b>${pend.length}</b><span>Por revisar</span></div><div class="stat"><b>${SEED_FISIOS.length + S.extraFisios.length}</b><span>Fisios activos</span></div><div class="stat"><b>${alerts.length}</b><span>Alertas</span></div></div>
@@ -886,14 +1341,16 @@ function aCola() {
         ['Título SENESCYT', q.docs.senescyt, q.uni !== '—' ? `Lic. Terapia Física · ${esc(q.uni)} ${q.grad}` : 'Sin título registrado', 'https://www.senescyt.gob.ec/web/guest/consultas'],
         ['Registro MSP', q.docs.msp, 'Registro del título en salud', ''],
         ['Antecedentes penales', q.docs.antecedentes, 'Certificado del Ministerio del Interior', 'https://certificados.ministeriodelinterior.gob.ec/gestorcertificados/antecedentes/'],
-        ['Selfie vs. cédula', q.docs.selfie >= 85 ? 'ok' : 'bad', `Coincidencia ${q.docs.selfie}%`, '']];
-      const allOk = docs.every(d => d[1] === 'ok');
+        ['Selfie vs. cédula', q.docs.selfie >= 85 ? 'ok' : q.docs.selfie >= 70 ? 'rev' : 'bad', `Coincidencia ${q.docs.selfie}% (mínimo 85%)`, '']];
+      const allOk = docs.every(d => d[1] === 'ok'), manualOk = !allOk && docs.slice(0, 4).every(d => d[1] === 'ok') && docs[4][1] === 'rev';
       return `<div class="card stack">
         <div class="row">${av(q)}<div class="grow"><b>${esc(q.name)}</b><div class="small muted">${esc(q.specs.join(', '))} · ${esc(q.barrio)} · $${q.price}</div></div>${allOk ? '<span class="badge">Completo</span>' : '<span class="badge warn">Incompleto</span>'}</div>
         <div class="list">${docs.map(d => `<div class="doc-row"><div class="check-ico ${label[d[1]][0]}">${ic(label[d[1]][1])}</div><div style="min-width:0"><b class="small">${d[0]}</b><div class="tiny muted">${d[2]}</div></div>${d[3] ? `<a href="${d[3]}" target="_blank" rel="noopener">Consultar</a>` : `<span class="tiny muted">${label[d[1]][2]}</span>`}</div>`).join('')}</div>
+        ${q.selfieImg ? `<div class="thumbs"><figure><img src="${q.selfieImg}" alt="Selfie"><figcaption>Selfie en vivo</figcaption></figure><figure><img src="${q.frontImg}" alt="Cédula"><figcaption>Foto de la cédula</figcaption></figure></div>` : ''}
+        ${q.fromApp ? '<span class="badge neutral">Registrado desde la app hace un momento</span>' : ''}
         ${q.certs.length ? `<span class="small"><span class="muted">Certificados: </span>${esc(q.certs.join(' · '))}</span>` : ''}
-        <div class="row"><button class="btn line small" style="flex:1" data-act="reject" data-id="${q.id}">Rechazar</button><button class="btn small" style="flex:2" data-act="approve" data-id="${q.id}" ${allOk ? '' : 'disabled'}>Aprobar y publicar</button></div>
-        ${allOk ? '' : '<span class="hint">Solo se puede aprobar cuando todos los documentos están verificados.</span>'}
+        <div class="row"><button class="btn line small" style="flex:1" data-act="reject" data-id="${q.id}">Rechazar</button><button class="btn small" style="flex:2" data-act="approve" data-id="${q.id}" ${allOk || manualOk ? '' : 'disabled'}>${manualOk ? 'Revisé las fotos: aprobar' : 'Aprobar y publicar'}</button></div>
+        ${allOk ? '' : manualOk ? '<span class="hint">La comparación facial quedó baja. Compara la selfie con la cédula antes de aprobar.</span>' : '<span class="hint">Solo se puede aprobar cuando todos los documentos están verificados.</span>'}
       </div>`;
     }).join('') : `<div class="empty">${ic('check')}<span>No hay solicitudes pendientes.</span></div>`}
   </div>`;
@@ -908,6 +1365,13 @@ function sosModal() {
     <div class="callout warn">${ic('alert')}<span>Esto es una demostración. No se contactará a nadie.</span></div>
     <button class="btn danger" data-act="sosConfirm">Activar alerta</button><button class="btn line" data-act="closeModal">Cancelar</button>`);
 }
+function verifyGateModal() {
+  const st = S.user.kycStatus;
+  if (st === 'review' || st === 'alt') { toast(st === 'review' ? 'Tu verificación está en revisión. Te avisamos en menos de 2 horas.' : 'Completa tu videollamada de verificación para reservar.'); return; }
+  modal(`<div class="row"><div class="check-ico ok" style="width:44px;height:44px;background:var(--brand-soft);color:var(--brand)">${ic('shield', 'style="width:22px;height:22px"')}</div><h2 class="grow" style="font-size:20px">Verifica tu identidad para reservar</h2></div>
+    <p class="small" style="margin:0">Los especialistas solo van a casas de pacientes verificados. Toma unos 2 minutos: tu cédula y una selfie, como en la app de tu banco.</p>
+    <button class="btn" data-act="kStartCliente">Verificar ahora</button><button class="btn line" data-act="closeModal">Ahora no</button>`);
+}
 function chatModal() {
   modal(`<div class="row"><h2 class="grow" style="font-size:18px">Chat de la cita</h2><button class="iconbtn" data-act="closeModal" aria-label="Cerrar">${ic('x')}</button></div>
     <div class="chat"><div class="bubble them">Hola, voy en camino. ¿Hay parqueadero de visitas?</div><div class="bubble me">Sí, el guardia te indica. Es el timbre 5B.</div><div class="bubble them">Perfecto, llego en unos minutos.</div></div>
@@ -919,23 +1383,30 @@ function chatModal() {
 const TABS = {
   cliente: [['home', 'search', 'Explorar'], ['citas', 'cal', 'Mis citas'], ['perfil', 'user', 'Cuenta']],
   fisio: [['inicio', 'home', 'Inicio'], ['agenda', 'cal', 'Agenda'], ['ganancias', 'wallet', 'Ganancias'], ['perfil', 'user', 'Perfil']],
-  admin: [['cola', 'shield', 'Verificación']],
+  admin: [['cola', 'shield', 'Verificación'], ['negocio', 'wallet', 'Negocio']],
 };
 const TAB_OF = { profile: 'home', book: 'home', activa: 'home', fbook: 'inicio', preview: 'perfil' };
 let timerInt;
+function kycRole() {
+  if (!S.kyc || S.kyc.who !== S.role) S.kyc = newKyc(S.role);
+  return kycView();
+}
 function render(scrollTop) {
   document.querySelectorAll('[data-role]').forEach(b => b.setAttribute('aria-pressed', b.dataset.role === S.role));
   const v = view();
   let html = '';
-  if (S.role === 'cliente') html = ({ welcome: cWelcome, registro: cRegistro, otp: cOtp, selfie: cSelfie, listo: cListo, home: cHome, citas: cCitas, perfil: cPerfil, activa: cActiva, book: cBook })[v.name]?.() ?? (v.name === 'profile' ? cProfile(v.id) : cHome());
-  if (S.role === 'fisio') html = ({ inicio: fInicio, agenda: fAgenda, ganancias: fGanancias, perfil: fPerfil })[v.name]?.() ?? (v.name === 'fbook' ? fBooking(v.id) : v.name === 'preview' ? cProfile(myId, true).replace('data-go="home"', 'data-go="perfil"') : fInicio());
-  if (S.role === 'admin') html = aCola();
+  if (S.role === 'cliente') html = ({ welcome: cWelcome, kyc: kycRole, home: cHome, citas: cCitas, perfil: cPerfil, activa: cActiva, book: cBook })[v.name]?.() ?? (v.name === 'profile' ? cProfile(v.id) : cHome());
+  if (S.role === 'fisio') html = ({ inicio: fInicio, agenda: fAgenda, ganancias: fGanancias, perfil: fPerfil, kyc: kycRole })[v.name]?.() ?? (v.name === 'fbook' ? fBooking(v.id) : v.name === 'preview' ? cProfile(myId, true).replace('data-go="home"', 'data-go="perfil"') : fInicio());
+  if (S.role === 'admin') html = v.name === 'negocio' ? aNegocio() : aCola();
   $screen.innerHTML = html;
   if (scrollTop) $screen.scrollTop = 0;
-  const onboarding = S.role === 'cliente' && ['welcome', 'registro', 'otp', 'selfie', 'listo'].includes(v.name);
+  const onboarding = v.name === 'kyc' || (S.role === 'cliente' && v.name === 'welcome');
   $tab.hidden = onboarding || (S.role === 'cliente' && v.name === 'book');
   const cur = TAB_OF[v.name] || v.name;
   $tab.innerHTML = TABS[S.role].map(([n, i, l]) => `<button data-tab="${n}" ${cur === n ? 'aria-current="page"' : ''}>${ic(i)}<span>${l}</span></button>`).join('');
+  const k = S.kyc;
+  if (v.name === 'kyc' && k && ['front', 'back', 'selfie'].includes(k.step) && !k[k.step]) startCam(k.step === 'selfie' ? 'user' : 'environment'); else stopCam();
+  if (v.name === 'kyc' && k?.step === 'check' && !checkTimer) runChecks();
   clearInterval(timerInt);
   const t = document.getElementById('timer');
   if (t) {
@@ -952,14 +1423,70 @@ function newBooking() {
 }
 function setStatus(b, st) {
   b.status = st;
+  if (st === 'en_camino') b.distLeft = b.seed ? 1.4 : +dist(fisioById(b.fisioId), ME).toFixed(2);
+  if (st === 'llego') b.distLeft = 0.04;
   if (st === 'en_curso') { b.startedAt = Date.now(); b.startedLabel = new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }); }
   if (st === 'completada' && b.fisioId === myId) S.fisio.earn.push({ d: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][new Date().getDay()], who: b.seed ? b.client.name : S.user.name, p: b.price });
   save();
 }
 const ACTIONS = {
-  skipOnboarding() { S.user.cedula = '1710034065'; S.user.phone = '0987654321'; S.user.verified = true; S.user.selfie = sampleSelfie(); go('home'); toast('Entraste con una cuenta de ejemplo verificada.'); },
-  fakeSelfie() { S.user.selfie = sampleSelfie(); save(); render(); },
-  finishReg() { S.user.verified = true; go('listo'); },
+  skipOnboarding() { S.user.cedula = '1710034065'; S.user.phone = '0987654321'; S.user.verified = true; S.user.kycStatus = 'ok'; S.user.selfie = sampleSelfie(); go('home'); toast('Entraste con una cuenta de ejemplo verificada.'); },
+  kStartCliente() { S.kyc = newKyc('cliente'); closeModal(); go('kyc'); },
+  kStartFisio() { S.kyc = newKyc('fisio'); go('kyc'); },
+  kNext() {
+    const k = S.kyc;
+    if (k.step === 'consent' && !k.consent.every(Boolean)) return;
+    if (k.step === 'selfie' || k.step === 'prof') k.checkIdx = -1;
+    kycNext();
+  },
+  kBack() {
+    const prev = kycPrev();
+    if (S.kyc.step === 'intro' || !prev) return ACTIONS.kExit(true);
+    kycGo(prev);
+  },
+  kAlt() { kycGo('alt'); },
+  kToConsent() { kycGo('consent'); },
+  kAltConfirm() { S.kyc.result = 'alt'; if (S.kyc.who === 'cliente') S.user.kycStatus = 'alt'; kycGo('result'); },
+  kSample() {
+    const k = S.kyc, smp = KYC_SAMPLE[k.who];
+    if (k.step === 'phone') { k.phone = smp.phone; kycGo('otp'); return; }
+    if (k.step === 'datos') { k.cedula = smp.cedula; k.dactilar = smp.dactilar; save(); render(); return; }
+    if (k.step === 'prof') { Object.assign(k.prof, { senescyt: '1027-2021-2384756', msp: 'Libro 3, folio 125', antecedentes: 'antecedentes-penales.pdf', specs: ['Deportiva', 'Traumatológica'], price: 25 }); save(); render(); }
+  },
+  kShoot() {
+    const img = grabFrame(false);
+    if (!img) { toast('No hay cámara disponible aquí. Sube una foto o usa la de ejemplo.'); return; }
+    S.kyc[S.kyc.step] = img; stopCam(); save(); render();
+  },
+  kSampleImg() { const k = S.kyc; k[k.step] = { front: sampleCedula, back: sampleCedulaBack, selfie: sampleSelfie }[k.step](); stopCam(); save(); render(); },
+  kRetake() { S.kyc[S.kyc.step] = ''; save(); render(); },
+  kLive() { runLiveness(); },
+  kRetry() { const k = S.kyc; k.attempts++; Object.assign(k, { front: '', back: '', selfie: '', checkIdx: -1, result: null }); kycGo('datos'); },
+  kExit(arg) {
+    const k = S.kyc, early = arg === true;
+    stopCam(); clearTimeout(liveTimer);
+    if (k.who === 'fisio') {
+      if (!early && (k.result === 'ok' || k.result === 'review')) { S.role = 'admin'; S.views.admin = { name: 'cola' }; save(); render(true); return; }
+      go('perfil'); return;
+    }
+    go(early ? (S.user.kycStatus === 'none' ? 'welcome' : 'perfil') : 'home');
+  },
+  bizReset() { S.biz = { ...BIZ_DEF }; save(); render(); },
+  pinConfirm() { S.draft.pinOk = true; save(); render(); },
+  fAdvance(el) { const b = findReq(el.dataset.id); b.distLeft = Math.max(0.06, +(b.distLeft * 0.3).toFixed(2)); save(); render(); },
+  doorOk() { activeBooking().doorOk = true; save(); render(); },
+  doorNo() { doorMismatchModal(); },
+  doorReport() {
+    const b = activeBooking(), f = fisioById(b.fisioId);
+    S.alerts.unshift({ id: 'a' + Date.now(), at: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }), who: S.user.name, with: f.name, where: ME.label + ' (la persona en la puerta no coincide con el perfil)' });
+    setStatus(b, 'cancelada'); closeModal(); go('home'); toast('Cita cancelada y reportada. Seguridad te llamará (demo).');
+  },
+  longSession() { longSessionModal(); },
+  rtidShoot() {
+    const st = document.getElementById('rtidState'), btn = document.getElementById('rtidBtn');
+    st.innerHTML = '<div class="spinner sm"></div><span>Comparando con tu foto verificada…</span>'; btn.disabled = true;
+    setTimeout(() => { S.fisio.rtid = new Date().toDateString(); S.fisio.available = true; SEED_FISIOS[0].available = true; save(); closeModal(); render(); toast('Eres tú. Ya estás disponible.'); }, 1300);
+  },
   shareProfile() { toast('Enlace del perfil copiado (demo).'); },
   confirmBook() { const b = newBooking(); S.bookings.push(b); S.draft = null; S.rating = null; go('activa'); toast('Solicitud enviada. Pago retenido, no cobrado.'); },
   simAccept() { setStatus(activeBooking(), 'confirmada'); render(); toast('¡Confirmada! Guarda tu PIN.'); },
@@ -987,9 +1514,12 @@ const ACTIONS = {
     save(); closeModal(); render(); toast('Alerta enviada (demo). Visible en el panel Admin.');
   },
   closeModal() { closeModal(); },
-  toggleAvail() { S.fisio.available = !S.fisio.available; SEED_FISIOS[0].available = S.fisio.available; save(); render(); },
+  toggleAvail() {
+    if (!S.fisio.available && S.fisio.rtid !== new Date().toDateString()) { rtidModal(); return; }
+    S.fisio.available = !S.fisio.available; SEED_FISIOS[0].available = S.fisio.available; save(); render();
+  },
   fDepart(el) { setStatus(findReq(el.dataset.id), 'en_camino'); render(); toast('El paciente ya ve tu ubicación.'); },
-  fArrive(el) { setStatus(findReq(el.dataset.id), 'llego'); render(); setTimeout(() => document.getElementById('pin0')?.focus(), 50); },
+  fArrive(el) { if ((findReq(el.dataset.id).distLeft ?? 0) > 0.15) return; setStatus(findReq(el.dataset.id), 'llego'); render(); setTimeout(() => document.getElementById('pin0')?.focus(), 50); },
   fCheckPin(el) {
     const b = findReq(el.dataset.id), v = [0, 1, 2, 3].map(i => document.getElementById('pin' + i).value).join('');
     if (v !== b.pin) { const h = document.getElementById('pinHint'); h.textContent = 'PIN incorrecto. Pídelo de nuevo al paciente.'; h.className = 'hint bad'; return; }
@@ -1036,7 +1566,8 @@ function handle(el) {
   if (d.profile) { go('profile', { id: d.profile }); return; }
   if (d.book) {
     if (activeBooking()) { toast('Ya tienes una cita activa. Termínala o cancélala primero.'); return; }
-    S.draft = { fisioId: d.book, day: 1, time: null, address: ME.label + ', edificio Torre Carolina, piso 4', ref: '', motivo: '', pay: 'card' }; go('book'); return;
+    if (S.user.kycStatus !== 'ok') { verifyGateModal(); return; }
+    S.draft = { fisioId: d.book, day: 1, time: null, address: ME.label + ', edificio Torre Carolina, piso 4', ref: '', motivo: '', pay: 'card', pin: { x: 104, y: 46 }, pinOk: false }; go('book'); return;
   }
   if (d.day != null && S.draft) { S.draft.day = +d.day; S.draft.time = null; save(); render(); return; }
   if (d.slot != null && S.draft) { S.draft.time = +d.slot; save(); render(); return; }
@@ -1048,8 +1579,19 @@ function handle(el) {
   if (d.accept) { const r = findReq(d.accept); setStatus(r, 'confirmada'); go('fbook', { id: r.id }); toast('Aceptada. Ya ves la dirección completa.'); return; }
   if (d.reject) { setStatus(findReq(d.reject), 'rechazada'); render(); toast('Solicitud rechazada. Buscaremos otro especialista para el paciente.'); return; }
   if (d.fbook) { go('fbook', { id: d.fbook }); return; }
+  if (d.kforce) { S.kyc.forced = d.kforce; save(); render(); return; }
+  if (d.kaltslot) { S.kyc.altSlot = d.kaltslot; save(); render(); return; }
+  if (d.kspec) { const sp = S.kyc.prof.specs; S.kyc.prof.specs = sp.includes(d.kspec) ? sp.filter(x => x !== d.kspec) : sp.concat(d.kspec); save(); render(); return; }
   if (d.act) ACTIONS[d.act]?.(el);
 }
+// Pin del mapa de la cuadra: toca para mover.
+document.addEventListener('click', e => {
+  const svg = e.target.closest('#pinMap');
+  if (!svg || !S.draft) return;
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+  S.draft.pin = { x: Math.round(Math.min(332, Math.max(8, q.x))), y: Math.round(Math.min(176, Math.max(22, q.y))) }; S.draft.pinOk = false; save(); render();
+});
 // Close modal only when clicking the backdrop itself.
 $modal.addEventListener('click', e => { if (e.target.classList.contains('modal-bg')) { e.stopPropagation(); closeModal(); } }, true);
 
@@ -1057,32 +1599,38 @@ document.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === 
 
 document.addEventListener('input', e => {
   const t = e.target;
-  if (t.id === 'f-ced') {
-    t.value = t.value.replace(/\D/g, ''); S.user.cedula = t.value; save();
-    const err = t.value ? validarCedula(t.value) : '', h = document.getElementById('cedHint');
-    t.classList.toggle('bad', !!err && t.value.length === 10);
+  if (t.id === 'k-ced') {
+    t.value = t.value.replace(/\D/g, ''); S.kyc.cedula = t.value; save();
+    const err = t.value.length === 10 ? validarCedula(t.value) : '', h = document.getElementById('k-cedHint');
+    t.classList.toggle('bad', !!err);
     h.className = 'hint ' + (t.value.length < 10 ? '' : err ? 'bad' : 'good');
-    h.textContent = t.value.length < 10 ? `${t.value.length}/10 dígitos` : err || 'Cédula válida.';
+    h.textContent = t.value.length < 10 ? `${t.value.length}/10 dígitos` : err || 'Número válido.';
   }
-  if (t.id === 'f-name') { S.user.name = t.value; save(); }
-  if (t.id === 'f-tel') { t.value = t.value.replace(/\D/g, ''); S.user.phone = t.value; save(); }
-  if (t.id === 'f-terms') { S.user.terms = t.checked; save(); }
+  if (t.id === 'k-dac') {
+    t.value = t.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); S.kyc.dactilar = t.value; save();
+    const ok = /^[A-Z]\d{4}[A-Z]\d{4}$/.test(t.value), h = document.getElementById('k-dacHint');
+    h.className = 'hint ' + (t.value.length < 10 ? '' : ok ? 'good' : 'bad');
+    h.textContent = t.value.length < 10 ? 'Está en el reverso de tu cédula, junto a la huella.' : ok ? 'Formato correcto.' : 'Formato: letra, 4 números, letra, 4 números.';
+  }
+  if (t.id === 'k-tel') { t.value = t.value.replace(/\D/g, ''); S.kyc.phone = t.value; save(); }
+  if (S.kyc && ['k-sen', 'k-msp', 'k-price'].includes(t.id)) {
+    S.kyc.prof[{ 'k-sen': 'senescyt', 'k-msp': 'msp', 'k-price': 'price' }[t.id]] = t.value; save();
+    const p = S.kyc.prof, b = document.getElementById('kProfBtn'); if (b) b.disabled = !(p.senescyt.trim().length >= 6 && p.msp.trim().length >= 4 && p.antecedentes && p.specs.length);
+  }
+  if (t.id.startsWith('biz-')) bizInput(t);
   if (S.draft && ['b-addr', 'b-ref', 'b-mot'].includes(t.id)) {
     S.draft[{ 'b-addr': 'address', 'b-ref': 'ref', 'b-mot': 'motivo' }[t.id]] = t.value; save();
-    const ok = S.draft.time != null && S.draft.motivo.trim().length > 4 && S.draft.address.trim().length > 4;
+    const ok = S.draft.time != null && S.draft.motivo.trim().length > 4 && S.draft.address.trim().length > 4 && S.draft.pinOk;
     const btn = document.querySelector('[data-act="confirmBook"]'); if (btn) btn.disabled = !ok;
   }
   if (/^(otp|pin)\d$/.test(t.id)) { t.value = t.value.replace(/\D/g, '').slice(-1); if (t.value) document.getElementById(t.id.slice(0, -1) + (+t.id.slice(-1) + 1))?.focus(); }
 });
 document.addEventListener('change', e => {
   const t = e.target;
-  if (t.id === 'f-terms') { S.user.terms = t.checked; save(); }
-  if (t.id === 'selfieIn' && t.files[0]) {
-    const fr = new FileReader(); fr.onload = () => {
-      const img = new Image(); img.onload = () => { const c = document.createElement('canvas'), k = 240 / Math.max(img.width, img.height); c.width = img.width * k; c.height = img.height * k; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); S.user.selfie = c.toDataURL('image/jpeg', .8); save(); render(); };
-      img.src = fr.result;
-    }; fr.readAsDataURL(t.files[0]);
-  }
+  if (t.id === 'k-c0' || t.id === 'k-c1') { S.kyc.consent[+t.id.slice(-1)] = t.checked; save(); document.getElementById('kConsentBtn').disabled = !S.kyc.consent.every(Boolean); }
+  if (t.id === 'k-barrio') { S.kyc.prof.barrio = t.value; save(); }
+  if (t.id === 'kFile' && t.files[0]) downscale(t.files[0], data => { S.kyc[S.kyc.step] = data; stopCam(); save(); render(); });
+  if (t.id === 'kAnte' && t.files[0]) { S.kyc.prof.antecedentes = t.files[0].name; save(); render(); }
   if (t.id === 'certIn' && t.files[0]) {
     const name = t.files[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
     S.fisio.extraCerts.push({ t: name, i: 'Subido hoy', ok: false }); save(); render(); toast('Certificado enviado a revisión.');
@@ -1090,21 +1638,24 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('submit', e => {
   e.preventDefault();
-  if (e.target.id === 'regForm') {
-    const u = S.user, err = validarCedula(u.cedula);
-    if (!u.name.trim()) return toast('Escribe tu nombre completo.');
-    if (err) { document.getElementById('f-ced').classList.add('bad'); return toast(u.cedula ? err : 'Ingresa tu número de cédula.'); }
-    if (!/^09\d{8}$/.test(u.phone)) { const h = document.getElementById('telHint'); h.textContent = 'El celular debe tener 10 dígitos y empezar con 09.'; h.className = 'hint bad'; return; }
-    if (!u.terms) return toast('Debes aceptar los términos para continuar.');
-    go('otp'); setTimeout(() => document.getElementById('otp0')?.focus(), 50);
+  const k = S.kyc;
+  if (e.target.id === 'kPhoneForm') {
+    if (!/^09\d{8}$/.test(k.phone)) { const h = document.getElementById('k-telHint'); h.textContent = 'El celular debe tener 10 dígitos y empezar con 09.'; h.className = 'hint bad'; return; }
+    kycGo('otp'); setTimeout(() => document.getElementById('otp0')?.focus(), 50);
   }
-  if (e.target.id === 'otpForm') {
-    const v = [0, 1, 2, 3].map(i => document.getElementById('otp' + i).value).join('');
-    if (v.length < 4) return toast('Ingresa los 4 dígitos.');
-    go('selfie');
+  if (e.target.id === 'kOtpForm') {
+    const v = [0, 1, 2, 3, 4, 5].map(i => document.getElementById('otp' + i).value).join('');
+    if (v.length < 6) return toast('Ingresa los 6 dígitos.');
+    kycGo('datos');
+  }
+  if (e.target.id === 'kDatosForm') {
+    const err = validarCedula(k.cedula);
+    if (err) { document.getElementById('k-ced').classList.add('bad'); return toast(k.cedula ? err : 'Ingresa tu número de cédula.'); }
+    if (!/^[A-Z]\d{4}[A-Z]\d{4}$/.test(k.dactilar)) return toast('Revisa el código dactilar: letra, 4 números, letra, 4 números.');
+    kycGo('front');
   }
 });
-document.getElementById('resetBtn').addEventListener('click', () => { SEED_FISIOS.forEach(f => { f.reviews = f.reviews.filter(r => r.d !== 'justo ahora'); }); S = fresh(); SEED_FISIOS[0].available = true; save(); closeModal(); render(true); toast('Demo reiniciada.'); });
+document.getElementById('resetBtn').addEventListener('click', () => { stopCam(); clearTimeout(checkTimer); checkTimer = null; clearTimeout(liveTimer); SEED_FISIOS.forEach(f => { f.reviews = f.reviews.filter(r => r.d !== 'justo ahora'); }); S = fresh(); SEED_FISIOS[0].available = true; save(); closeModal(); render(true); toast('Demo reiniciada.'); });
 
 // Restore reviews added in earlier visits so the profile stays consistent after a reload.
 (S.reviewsAdded || []).forEach(({ id, r }) => { const f = SEED_FISIOS.find(x => x.id === id) || S.extraFisios.find(x => x.id === id); if (f && !f.reviews.some(x => x.t === r.t && x.by === r.by)) f.reviews.unshift(r); });
