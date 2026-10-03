@@ -1,0 +1,27 @@
+# Desarrollo local: docker compose up
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: fisio
+      POSTGRES_PASSWORD: fisio
+      POSTGRES_DB: fisiocerca
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "fisio"]
+      interval: 5s
+  api:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://fisio:fisio@db:5432/fisiocerca
+      JWT_SECRET: desarrollo-desarrollo-desarrollo-desarrollo
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:-AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=}
+      HASH_PEPPER: desarrollo-pepper
+      CORS_ORIGINS: http://localhost:5173
+    ports: ["3000:3000"]
+volumes:
+  pgdata:

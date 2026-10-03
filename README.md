@@ -20,6 +20,20 @@ Todos los perfiles, pagos y alertas son de ejemplo. El estado se guarda en el na
 
 `prototipo/app.html` es el archivo que se edita. Después de cambiarlo, corre `prototipo/build.sh` para regenerar `index.html`.
 
+## Backend
+
+`backend/` es la API real: Node.js 22, TypeScript, Fastify y PostgreSQL. Incluye:
+
+- Acceso por SMS y verificación de identidad tipo banco.
+- Búsqueda de fisios por cercanía.
+- Reservas con geocerca, PIN y consentimiento informado.
+- Pagos con retención, cobro y devolución, más libro contable y liquidaciones.
+- Historia clínica cifrada con registro de accesos.
+- Soporte, emergencias y panel de administración.
+- 47 pruebas automáticas contra una base de datos real.
+
+Cómo arrancarlo: [`backend/README.md`](backend/README.md). Arquitectura, seguridad y lo que falta para producción: [`docs/backend.md`](docs/backend.md).
+
 ## Documentos
 
 - [`docs/lanzamiento.md`](docs/lanzamiento.md): cómo se lanzaron Uber, inDrive, Rappi, Luna, Portea, Doctoralia y Physitrack, y el plan de lanzamiento de FisioCerca.
