@@ -11,6 +11,7 @@ import { ARRIVAL_RADIUS_M, distanceMeters } from '../lib/geo.js';
 import { LATE_CANCEL_HOURS, LATE_CANCEL_RATE, NO_SHOW_CREDIT_CENTS, quote } from '../lib/pricing.js';
 import { localParts } from '../lib/time.js';
 import { authGuard, requireVerified } from '../plugins/auth.js';
+import { idempotency } from '../plugins/idempotency.js';
 import { ageOf, ownPatient } from './patients.js';
 import { durationFor } from './physios.js';
 import { authorizeBooking, captureBooking, capturePartial, releaseBooking, type BookingMoney } from './money.js';
@@ -41,13 +42,13 @@ const STATUS_TEXT: Partial<Record<Status, string>> = {
   confirmed: 'confirmó tu cita', en_route: 'va en camino', arrived: 'llegó a tu puerta', completed: 'terminó la sesión. ¿Cómo te fue?', rejected: 'no puede atenderte en ese horario. Elige otro especialista.',
 };
 
-async function lockBooking(tx: Tx, id: string): Promise<BookingRow> {
+export async function lockBooking(tx: Tx, id: string): Promise<BookingRow> {
   const b = await one<BookingRow>(tx, 'SELECT * FROM bookings WHERE id = $1 FOR UPDATE', [id]);
   if (!b) throw notFound('Cita');
   return b;
 }
 
-async function transition(tx: Tx, b: BookingRow, to: Status, actorId: string, data: Record<string, unknown> = {}, extraSql = '', extraParams: unknown[] = []) {
+export async function transition(tx: Tx, b: BookingRow, to: Status, actorId: string | null, data: Record<string, unknown> = {}, extraSql = '', extraParams: unknown[] = []) {
   if (!TRANSITIONS[b.status].includes(to)) throw conflict('invalid_transition', `La cita está «${b.status}» y no puede pasar a «${to}».`);
   await tx.query(`UPDATE bookings SET status = $2${extraSql} WHERE id = $1`, [b.id, to, ...extraParams]);
   await tx.query('INSERT INTO booking_events (booking_id, actor_id, type, data) VALUES ($1, $2, $3, $4)', [b.id, actorId, to, data]);
@@ -93,6 +94,7 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
   const r = app.withTypeProvider<ZodTypeProvider>();
   const auth = authGuard(ctx);
   const idParam = z.object({ id: z.string().uuid() });
+  const idem = idempotency(ctx);
 
   // ---------- Crear una reserva ----------
   r.post('/v1/bookings', {
@@ -110,7 +112,8 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
         usePackage: z.boolean().default(false),
       }),
     },
-    preHandler: [auth, requireVerified()],
+    preHandler: [auth, requireVerified(), idem.preHandler],
+    onSend: idem.onSend,
   }, async (req, reply) => {
     const b = req.body;
     if (b.redFlags.length) {
@@ -153,11 +156,11 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
       const qt = quote(b.mode === 'home' ? physio.price_cents : physio.video_price_cents, user!.credit_cents, !!packageId);
       if (qt.creditCents) await tx.query('UPDATE users SET credit_cents = credit_cents - $2 WHERE id = $1', [req.auth.id, qt.creditCents]);
       const row = await one<BookingRow>(tx, `INSERT INTO bookings (booked_by, patient_id, physio_id, mode, scheduled_at, duration_min, ends_at, address_enc, lat, lng, pain, pain_score, comments_enc,
-          companion, companion_name, price_cents, fee_cents, credit_cents, package_id, total_cents, pin_enc)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING *`,
+          companion, companion_name, price_cents, fee_cents, credit_cents, package_id, total_cents, pin_enc, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) RETURNING *`,
         [req.auth.id, patient.id, b.physioId, b.mode, start, dur, end, ctx.cipher.encryptOpt(b.mode === 'home' ? b.address : null), b.mode === 'home' ? b.lat : null, b.mode === 'home' ? b.lng : null,
           b.pain, b.painScore ?? null, ctx.cipher.encryptOpt(b.comments), isThird ? b.companion ?? null : null, b.companionName ?? null,
-          qt.priceCents, qt.feeCents, qt.creditCents, packageId, qt.totalCents, ctx.cipher.encrypt(randomDigits(4))]);
+          qt.priceCents, qt.feeCents, qt.creditCents, packageId, qt.totalCents, ctx.cipher.encrypt(randomDigits(4)), ctx.now()]);
       await authorizeBooking(ctx, tx, row!);
       await tx.query(`INSERT INTO booking_events (booking_id, actor_id, type) VALUES ($1, $2, 'created')`, [row!.id, req.auth.id]);
       await notify(tx, b.physioId, `Nueva solicitud${b.mode === 'video' ? ' por videollamada' : ''}. Tienes 30 minutos para responder.`, { bookingId: row!.id });
@@ -168,11 +171,12 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   r.get('/v1/bookings', {
-    schema: { tags: ['bookings'], querystring: z.object({ as: z.enum(['patient', 'physio']).default('patient') }) },
+    schema: { tags: ['bookings'], summary: 'Mis citas (paginado por fecha)', querystring: z.object({ as: z.enum(['patient', 'physio']).default('patient'), limit: z.coerce.number().int().min(1).max(100).default(30), before: z.string().datetime().optional() }) },
     preHandler: auth,
   }, async (req) => {
     const col = req.query.as === 'physio' ? 'physio_id' : 'booked_by';
-    const rows = await many<BookingRow>(ctx.db, `SELECT * FROM bookings WHERE ${col} = $1 ORDER BY scheduled_at DESC LIMIT 100`, [req.auth.id]);
+    const rows = await many<BookingRow>(ctx.db, `SELECT * FROM bookings WHERE ${col} = $1 AND ($2::timestamptz IS NULL OR scheduled_at < $2) ORDER BY scheduled_at DESC LIMIT $3`,
+      [req.auth.id, req.query.before ?? null, req.query.limit]);
     return Promise.all(rows.map(b => view(ctx, ctx.db, b, req.query.as)));
   });
 
@@ -222,21 +226,33 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
   }, z.object({ lat: z.number(), lng: z.number() }));
 
   // Iniciar: a domicilio exige rostro confirmado en la puerta, consentimiento firmado y el PIN del paciente.
-  physioAction('start', 'Iniciar la sesión', async (tx, b, req) => {
-    const consent = await one(tx, 'SELECT 1 FROM clinical_consents WHERE patient_id = $1 AND physio_id = $2', [b.patient_id, b.physio_id]);
-    if (!consent) throw unprocessable('consent_required', 'El paciente o su representante debe firmar el consentimiento informado.');
-    if (b.mode === 'home') {
-      if (b.status !== 'arrived') throw conflict('invalid_transition', 'Primero marca tu llegada.');
-      if (!b.door_confirmed_at) throw unprocessable('door_unconfirmed', 'El paciente debe confirmar que eres la persona del perfil.');
-      if (b.pin_attempts >= MAX_PIN_ATTEMPTS) throw new AppError(423, 'pin_locked', 'Demasiados intentos de PIN. Contacta a soporte.');
-      if (!req.body?.pin || !safeEqual(req.body.pin, ctx.cipher.decrypt(b.pin_enc))) {
-        await tx.query('UPDATE bookings SET pin_attempts = pin_attempts + 1 WHERE id = $1', [b.id]);
-        await tx.query('COMMIT'); await tx.query('BEGIN'); // el intento fallido queda registrado
+  // El PIN se valida antes de abrir la transacción para que un intento fallido quede registrado aunque se lance un error.
+  r.post('/v1/bookings/:id/start', {
+    schema: { tags: ['bookings'], summary: 'Iniciar la sesión', params: idParam, body: z.object({ pin: z.string().regex(/^\d{4}$/).optional() }).default({}) },
+    preHandler: auth,
+  }, async (req) => {
+    const pre = await one<BookingRow>(ctx.db, 'SELECT * FROM bookings WHERE id = $1', [req.params.id]);
+    if (!pre) throw notFound('Cita');
+    asPhysio(pre, req.auth.id);
+    if (pre.mode === 'home') {
+      if (pre.pin_attempts >= MAX_PIN_ATTEMPTS) throw new AppError(423, 'pin_locked', 'Demasiados intentos de PIN. Contacta a soporte.');
+      if (!req.body.pin || !safeEqual(req.body.pin, ctx.cipher.decrypt(pre.pin_enc))) {
+        await ctx.db.query('UPDATE bookings SET pin_attempts = pin_attempts + 1 WHERE id = $1', [pre.id]);
         throw unprocessable('wrong_pin', 'PIN incorrecto. Pídelo de nuevo al paciente.');
       }
     }
-    await transition(tx, b, 'in_progress', req.auth.id, {}, ', started_at = $3', [ctx.now()]);
-  }, z.object({ pin: z.string().regex(/^\d{4}$/).optional() }).default({}));
+    await withTx(ctx.db, async tx => {
+      const b = await lockBooking(tx, req.params.id);
+      const consent = await one(tx, 'SELECT 1 FROM clinical_consents WHERE patient_id = $1 AND physio_id = $2', [b.patient_id, b.physio_id]);
+      if (!consent) throw unprocessable('consent_required', 'El paciente o su representante debe firmar el consentimiento informado.');
+      if (b.mode === 'home') {
+        if (b.status !== 'arrived') throw conflict('invalid_transition', 'Primero marca tu llegada.');
+        if (!b.door_confirmed_at) throw unprocessable('door_unconfirmed', 'El paciente debe confirmar que eres la persona del perfil.');
+      }
+      await transition(tx, b, 'in_progress', req.auth.id, {}, ', started_at = $3', [ctx.now()]);
+    });
+    return { ok: true };
+  });
 
   // Terminar: nota SOAP cifrada, ejercicios para casa, cobro y reparto contable.
   physioAction('complete', 'Terminar la sesión con la nota clínica', async (tx, b, req) => {

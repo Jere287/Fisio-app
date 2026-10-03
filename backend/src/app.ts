@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
@@ -25,6 +26,8 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
       redact: ['req.headers.authorization', 'req.headers.cookie'],
     },
     trustProxy: true,
+    requestIdHeader: 'x-request-id',
+    genReqId: () => randomUUID(),
     bodyLimit: 1_500_000, // firmas del consentimiento en PNG
   });
   app.setValidatorCompiler(validatorCompiler);
@@ -54,6 +57,8 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
   if (ctx.config.NODE_ENV !== 'production') await app.register(swaggerUi, { routePrefix: '/docs' });
 
   app.decorateRequest('auth', null as never);
+  // Cada respuesta lleva su identificador para rastrearla en los registros.
+  app.addHook('onSend', async (req, reply, payload) => { reply.header('x-request-id', req.id); return payload; });
 
   app.setErrorHandler((err: any, req, reply) => {
     if (err instanceof AppError) return reply.status(err.status).send({ error: { code: err.code, message: err.message, details: err.details } });
@@ -64,7 +69,7 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
     if (err.code === '23505') return reply.status(409).send({ error: { code: 'duplicate', message: 'Ese registro ya existe.' } });
     if (err.statusCode && err.statusCode < 500) return reply.status(err.statusCode).send({ error: { code: err.code ?? 'bad_request', message: err.message } });
     req.log.error(err);
-    return reply.status(500).send({ error: { code: 'internal', message: 'Algo salió mal. Ya lo estamos revisando.' } });
+    return reply.status(500).send({ error: { code: 'internal', message: 'Algo salió mal. Ya lo estamos revisando.', requestId: req.id } });
   });
 
   app.get('/health', { schema: { hide: true } }, async () => {

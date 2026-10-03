@@ -5,6 +5,7 @@ import type { AppContext } from '../context.js';
 import { many, one, withTx } from '../db/pool.js';
 import { notFound } from '../lib/errors.js';
 import { authGuard, requireVerified } from '../plugins/auth.js';
+import { idempotency } from '../plugins/idempotency.js';
 
 // 5 sesiones con 10% de descuento o 10 con 15%. Vencen a los 6 meses; lo no usado se devuelve.
 export const PACKAGE_DISCOUNT: Record<number, number> = { 5: 0.10, 10: 0.15 };
@@ -12,10 +13,12 @@ export const PACKAGE_DISCOUNT: Record<number, number> = { 5: 0.10, 10: 0.15 };
 export async function packageRoutes(app: FastifyInstance, ctx: AppContext) {
   const r = app.withTypeProvider<ZodTypeProvider>();
   const auth = authGuard(ctx);
+  const idem = idempotency(ctx);
 
   r.post('/v1/packages', {
     schema: { tags: ['packages'], body: z.object({ physioId: z.string().uuid(), sessions: z.union([z.literal(5), z.literal(10)]) }) },
-    preHandler: [auth, requireVerified()],
+    preHandler: [auth, requireVerified(), idem.preHandler],
+    onSend: idem.onSend,
   }, async (req, reply) => {
     const p = await one<{ price_cents: number }>(ctx.db, `SELECT price_cents FROM physios WHERE user_id = $1 AND status = 'approved'`, [req.body.physioId]);
     if (!p) throw notFound('Fisioterapeuta');

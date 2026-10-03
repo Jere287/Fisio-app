@@ -17,6 +17,7 @@ const schema = z.object({
   KYC_WEBHOOK_SECRET: z.string().min(16).default('dev-kyc-webhook-secret'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_DAYS: z.coerce.number().default(30),
+  JOBS_ENABLED: z.enum(['true', 'false']).default('true').transform(v => v === 'true'),
 });
 
 export type Config = z.infer<typeof schema>;

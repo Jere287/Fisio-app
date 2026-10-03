@@ -34,6 +34,9 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
+      - name: El contrato OpenAPI está al día
+        run: npm run openapi && git diff --exit-code openapi.json
       - run: npm test
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high

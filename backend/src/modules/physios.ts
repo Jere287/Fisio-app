@@ -101,6 +101,11 @@ export async function physioRoutes(app: FastifyInstance, ctx: AppContext) {
   r.post('/v1/physios/me/availability-toggle', { schema: { tags: ['physios'], body: z.object({ available: z.boolean() }) }, preHandler: [auth, requireRole('physio')] }, async (req) => {
     const p = await one<{ status: string; last_selfie_at: Date | null }>(ctx.db, 'SELECT status, last_selfie_at FROM physios WHERE user_id = $1', [req.auth.id]);
     if (!p || p.status !== 'approved') throw forbidden('Tu perfil todavía no está aprobado.');
+    if (req.body.available) {
+      const valid = await one<{ n: number }>(ctx.db, `SELECT count(DISTINCT kind) AS n FROM physio_documents WHERE physio_id = $1 AND status = 'approved'
+        AND kind IN ('senescyt', 'msp', 'criminal_record') AND (expires_at IS NULL OR expires_at >= $2::date)`, [req.auth.id, localParts(ctx.now()).date]);
+      if ((valid?.n ?? 0) < 3) throw unprocessable('documents_expired', 'Tienes un documento vencido. Súbelo de nuevo para recibir pacientes.');
+    }
     if (req.body.available && (!p.last_selfie_at || ctx.now().getTime() - p.last_selfie_at.getTime() > SELFIE_VALID_HOURS * 3600000)) {
       throw unprocessable('selfie_required', 'Antes de conectarte, toma tu selfie del día.');
     }
