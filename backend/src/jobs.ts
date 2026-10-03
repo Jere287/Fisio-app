@@ -2,11 +2,15 @@ import type { AppContext } from './context.js';
 import { notify } from './context.js';
 import { many, withTx } from './db/pool.js';
 import { localParts } from './lib/time.js';
-import { lockBooking, transition } from './modules/bookings.js';
+import { TRACKING_LEAD_MIN, lockBooking, transition } from './modules/bookings.js';
 import { releaseBooking } from './modules/money.js';
+import { purgeRecordings } from './modules/recordings.js';
 
 export const PENDING_TIMEOUT_MIN = 30;
 const LONG_SESSION_MIN = 90;
+export const SAFETY_RETENTION_DAYS = 30;
+// Una cita con reporte o alerta conserva su respaldo (recorrido y grabaciones) mientras se investiga.
+const UNDER_REVIEW = `EXISTS (SELECT 1 FROM support_tickets t WHERE t.booking_id = x.booking_id) OR EXISTS (SELECT 1 FROM sos_alerts s WHERE s.booking_id = x.booking_id)`;
 const LOCK_ID = 727001; // candado de PostgreSQL: solo una instancia corre las tareas a la vez
 
 const minutesFrom = (ctx: AppContext, min: number) => new Date(ctx.now().getTime() + min * 60000);
@@ -42,6 +46,26 @@ async function reminders(ctx: AppContext): Promise<{ day: number; hour: number }
   return { day: day.length, hour: hour.length };
 }
 
+// Se abre el seguimiento mutuo: se avisa a las dos partes que ya pueden verse en el mapa.
+async function trackingStart(ctx: AppContext): Promise<number> {
+  const rows = await many<{ id: string; booked_by: string; physio_id: string }>(ctx.db,
+    `UPDATE bookings SET tracking_notified_at = $1
+     WHERE status = 'confirmed' AND mode = 'home' AND tracking_notified_at IS NULL AND scheduled_at > $1 AND scheduled_at <= $2 RETURNING id, booked_by, physio_id`,
+    [ctx.now(), minutesFrom(ctx, TRACKING_LEAD_MIN)]);
+  for (const b of rows) {
+    await notify(ctx.db, b.physio_id, 'Tu visita empieza pronto. Abre la cita: el paciente ya ve tu ubicación y tú ves si está en el domicilio.', { bookingId: b.id, kind: 'tracking' });
+    await notify(ctx.db, b.booked_by, 'Tu visita empieza pronto. Ya puedes ver en el mapa dónde está tu fisio.', { bookingId: b.id, kind: 'tracking' });
+  }
+  return rows.length;
+}
+
+// Borra el respaldo de seguridad vencido (recorridos y grabaciones) de más de 30 días, sin reporte ni alerta.
+async function purgeSafetyData(ctx: AppContext): Promise<number> {
+  const cutoff = minutesFrom(ctx, -SAFETY_RETENTION_DAYS * 24 * 60);
+  const r = await ctx.db.query(`DELETE FROM booking_locations x WHERE x.at < $1 AND NOT (${UNDER_REVIEW})`, [cutoff]);
+  return (r.rowCount ?? 0) + (await purgeRecordings(ctx, cutoff));
+}
+
 // Sesiones de más de 90 minutos: se pregunta a las dos partes si todo está bien.
 async function longSessions(ctx: AppContext): Promise<number> {
   const rows = await many<{ id: string; booked_by: string; physio_id: string }>(ctx.db,
@@ -67,7 +91,9 @@ export async function runJobs(ctx: AppContext) {
   const r = await reminders(ctx);
   const long = await longSessions(ctx);
   const docs = await expiredDocuments(ctx);
-  return { expired, reminders24h: r.day, reminders1h: r.hour, longSessions: long, expiredDocuments: docs };
+  const tracking = await trackingStart(ctx);
+  const purged = await purgeSafetyData(ctx);
+  return { expired, reminders24h: r.day, reminders1h: r.hour, trackingStarted: tracking, longSessions: long, expiredDocuments: docs, purgedSafety: purged };
 }
 
 // Corre cada minuto. Con varias instancias, el candado evita que dos ejecuten lo mismo.

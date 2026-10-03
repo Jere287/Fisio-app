@@ -6,6 +6,7 @@ import { FieldCipher } from './lib/crypto.js';
 import { ConsoleSms } from './providers/sms.js';
 import { createPaymentProvider } from './providers/payments.js';
 import { createKycProvider } from './providers/kyc.js';
+import { createStorage } from './providers/storage.js';
 import { startScheduler } from './jobs.js';
 
 const config = loadConfig();
@@ -17,6 +18,7 @@ const ctx = {
   sms: new ConsoleSms(msg => console.log(msg)),
   payments: createPaymentProvider(config.PAYMENT_PROVIDER),
   kyc: createKycProvider(config.KYC_PROVIDER),
+  storage: createStorage(config),
   now: () => new Date(),
 };
 const app = await buildApp(ctx);

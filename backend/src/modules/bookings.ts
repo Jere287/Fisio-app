@@ -22,12 +22,23 @@ export interface BookingRow extends BookingMoney {
   patient_id: string; mode: 'home' | 'video'; status: Status; scheduled_at: Date; ends_at: Date; duration_min: number;
   address_enc: string | null; lat: number | null; lng: number | null; pain: Record<string, unknown>; pain_score: number | null; comments_enc: string | null;
   companion: string | null; companion_name: string | null; pin_enc: string; pin_attempts: number; physio_lat: number | null; physio_lng: number | null;
-  red_flags: string[]; medical_clearance: boolean; physio_location_at: Date | null; door_confirmed_at: Date | null; started_at: Date | null; completed_at: Date | null; cancelled_at: Date | null; cancel_reason: string | null; created_at: Date;
+  red_flags: string[]; medical_clearance: boolean; physio_location_at: Date | null;
+  patient_lat: number | null; patient_lng: number | null; patient_location_at: Date | null;
+  recording_patient_at: Date | null; recording_physio_at: Date | null; door_confirmed_at: Date | null; started_at: Date | null; completed_at: Date | null; cancelled_at: Date | null; cancel_reason: string | null; created_at: Date;
 }
 
 const ACTIVE: Status[] = ['pending', 'confirmed', 'en_route', 'arrived', 'in_progress'];
 const NO_SHOW_GRACE_MIN = 20;
 const MAX_PIN_ATTEMPTS = 5;
+// Seguimiento mutuo: empieza 30 minutos antes de la hora (o al salir, si sale antes) y termina en la puerta.
+export const TRACKING_LEAD_MIN = 30;
+const trackingFrom = (b: BookingRow) => new Date(b.scheduled_at.getTime() - TRACKING_LEAD_MIN * 60000);
+// ¿Se muestra la ubicación de cada parte a la otra?
+const trackingVisible = (b: BookingRow, now: Date) => b.mode === 'home' && (b.status === 'en_route' || (b.status === 'confirmed' && now >= trackingFrom(b)));
+// ¿Se registra la ubicación? También durante la visita, pero solo para el equipo de seguridad (no se muestra).
+const trackingRecorded = (b: BookingRow, now: Date) => trackingVisible(b, now) || (b.mode === 'home' && ['arrived', 'in_progress'].includes(b.status));
+// La ubicación del teléfono de quien reservó solo dice algo si esa persona estará en la visita.
+const bookerPresent = (b: BookingRow, relationship: string | undefined) => relationship === 'self' || b.companion === 'booker';
 
 // Transiciones permitidas. Cualquier otra se rechaza con 409.
 const TRANSITIONS: Record<Status, Status[]> = {
@@ -76,21 +87,35 @@ async function view(ctx: AppContext, q: Queryable, b: BookingRow, viewer: 'patie
   const booker = await one<{ full_name: string; kyc_status: string }>(q, 'SELECT full_name, kyc_status FROM users WHERE id = $1', [b.booked_by]);
   const consent = await one(q, 'SELECT signed_at FROM clinical_consents WHERE patient_id = $1 AND physio_id = $2', [b.patient_id, b.physio_id]);
   const short = (n?: string | null) => { const [a, c] = (n ?? '').split(' '); return c ? `${a} ${c[0]}.` : a ?? ''; };
+  const now = ctx.now();
+  const visible = trackingVisible(b, now);
+  const live = ['arrived', 'in_progress'].includes(b.status);
+  const present = bookerPresent(b, patient?.relationship);
+  const tracking = {
+    from: trackingFrom(b), active: visible,
+    // Si la app de quien mira debe enviar su ubicación ahora mismo.
+    shareMine: trackingRecorded(b, now) && (viewer === 'physio' || present),
+  };
   const base = {
     id: b.id, mode: b.mode, status: b.status, scheduledAt: b.scheduled_at, durationMin: b.duration_min,
     pain: b.pain, painScore: b.pain_score, comments: ctx.cipher.decryptOpt(b.comments_enc),
     priceCents: b.price_cents, feeCents: b.fee_cents, creditCents: b.credit_cents, totalCents: b.total_cents, usesPackage: !!b.package_id,
     consentSigned: !!consent, doorConfirmed: !!b.door_confirmed_at, reviewed, redFlags: b.red_flags, medicalClearance: b.medical_clearance,
     patient: { name: viewer === 'physio' ? short(patient?.full_name) : patient?.full_name, relationship: patient?.relationship, age: patient?.birth_year ? ctx.now().getUTCFullYear() - patient.birth_year : null, canConsent: patient?.can_consent },
-    companion: b.companion, companionName: b.companion_name,
+    companion: b.companion, companionName: b.companion_name, tracking,
+    // Quién está grabando el audio de seguridad ahora mismo: las dos partes lo ven.
+    recording: { patient: live && !!b.recording_patient_at, physio: live && !!b.recording_physio_at },
   };
   if (viewer === 'patient') {
     return { ...base, address: ctx.cipher.decryptOpt(b.address_enc), lat: b.lat, lng: b.lng, physio: { id: b.physio_id, name: physio?.full_name }, pin: b.mode === 'home' ? ctx.cipher.decrypt(b.pin_enc) : null,
-      physioLocation: b.status === 'en_route' && b.physio_lat != null ? { lat: b.physio_lat, lng: b.physio_lng, at: b.physio_location_at } : null };
+      physioLocation: visible && b.physio_lat != null ? { lat: b.physio_lat, lng: b.physio_lng, at: b.physio_location_at } : null };
   }
   const showAddress = b.status !== 'pending';
   return { ...base, address: showAddress ? ctx.cipher.decryptOpt(b.address_enc) : null, lat: showAddress ? b.lat : null, lng: showAddress ? b.lng : null,
-    bookedBy: { name: short(booker?.full_name), verified: booker?.kyc_status === 'approved' } };
+    bookedBy: { name: short(booker?.full_name), verified: booker?.kyc_status === 'approved' },
+    patientLocation: visible && present && b.patient_lat != null && b.patient_lng != null && b.lat != null && b.lng != null
+      ? { lat: b.patient_lat, lng: b.patient_lng, at: b.patient_location_at, atHome: distanceMeters({ lat: b.patient_lat, lng: b.patient_lng }, { lat: b.lat, lng: b.lng }) <= ARRIVAL_RADIUS_M }
+      : null };
 }
 
 export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
@@ -221,11 +246,12 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
     await transition(tx, b, 'en_route', req.auth.id);
   });
 
-  physioAction('location', 'Enviar ubicación en vivo', async (tx, b, req) => {
-    if (!['en_route', 'arrived', 'in_progress'].includes(b.status)) throw conflict('invalid_state', 'Solo se comparte la ubicación durante la cita.');
+  physioAction('location', 'Enviar ubicación en vivo (fisio)', async (tx, b, req) => {
+    if (!trackingRecorded(b, ctx.now())) throw conflict('tracking_closed', `La ubicación se comparte desde ${TRACKING_LEAD_MIN} minutos antes de la cita hasta que termina.`);
     await tx.query('UPDATE bookings SET physio_lat = $2, physio_lng = $3, physio_location_at = $4 WHERE id = $1', [b.id, req.body.lat, req.body.lng, ctx.now()]);
+    await tx.query(`INSERT INTO booking_locations (booking_id, user_id, role, lat, lng, at) VALUES ($1, $2, 'physio', $3, $4, $5)`, [b.id, req.auth.id, req.body.lat, req.body.lng, ctx.now()]);
     return { ok: true, distanceM: Math.round(distanceMeters(req.body, { lat: b.lat!, lng: b.lng! })) };
-  }, z.object({ lat: z.number(), lng: z.number() }), z.object({ ok: z.boolean(), distanceM: z.number() }));
+  }, z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }), z.object({ ok: z.boolean(), distanceM: z.number() }));
 
   // «Llegué» solo dentro de 150 m del punto que marcó el paciente.
   physioAction('arrive', 'Marcar llegada (geocerca)', async (tx, b, req) => {
@@ -328,6 +354,16 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
     await audit(tx, req.auth.id, 'booking.identity_mismatch', b.id);
     return { ok: true, cancelled: true };
   }, z.object({ matches: z.boolean() }));
+
+  // Ubicación de quien reservó, solo si estará en la visita: el fisio ve si hay alguien en el domicilio antes de ir.
+  patientAction('patient-location', 'Enviar ubicación en vivo (paciente)', async (tx, b, req) => {
+    if (!trackingRecorded(b, ctx.now())) throw conflict('tracking_closed', `La ubicación se comparte desde ${TRACKING_LEAD_MIN} minutos antes de la cita hasta que termina.`);
+    const p = await one<{ relationship: string }>(tx, 'SELECT relationship FROM patients WHERE id = $1', [b.patient_id]);
+    if (!bookerPresent(b, p?.relationship)) throw unprocessable('not_present', 'Tu ubicación solo se comparte si vas a estar en la visita.');
+    await tx.query('UPDATE bookings SET patient_lat = $2, patient_lng = $3, patient_location_at = $4 WHERE id = $1', [b.id, req.body.lat, req.body.lng, ctx.now()]);
+    await tx.query(`INSERT INTO booking_locations (booking_id, user_id, role, lat, lng, at) VALUES ($1, $2, 'patient', $3, $4, $5)`, [b.id, req.auth.id, req.body.lat, req.body.lng, ctx.now()]);
+    return { ok: true, distanceM: Math.round(distanceMeters(req.body, { lat: b.lat!, lng: b.lng! })) };
+  }, z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) }), z.object({ ok: z.boolean(), distanceM: z.number() }));
 
   // «Mi fisio no llegó»: después de 20 minutos se cancela sin costo, se libera todo y se da crédito.
   patientAction('no-show', 'Reportar que el fisio no llegó', async (tx, b, req) => {

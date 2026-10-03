@@ -21,6 +21,19 @@ export class FieldCipher {
     d.setAuthTag(Buffer.from(tag, 'base64url'));
     return Buffer.concat([d.update(Buffer.from(data, 'base64url')), d.final()]).toString('utf8');
   }
+  // Archivos (grabaciones): 1 byte de versión + iv (12) + etiqueta (16) + datos cifrados.
+  encryptBytes(plain: Buffer): Buffer {
+    const iv = randomBytes(12);
+    const c = createCipheriv('aes-256-gcm', this.key, iv);
+    const data = Buffer.concat([c.update(plain), c.final()]);
+    return Buffer.concat([Buffer.from([1]), iv, c.getAuthTag(), data]);
+  }
+  decryptBytes(payload: Buffer): Buffer {
+    if (payload[0] !== 1 || payload.length < 29) throw new Error('Formato cifrado desconocido');
+    const d = createDecipheriv('aes-256-gcm', this.key, payload.subarray(1, 13));
+    d.setAuthTag(payload.subarray(13, 29));
+    return Buffer.concat([d.update(payload.subarray(29)), d.final()]);
+  }
   encryptOpt(v: string | null | undefined) { return v ? this.encrypt(v) : null; }
   decryptOpt(v: string | null | undefined) { return v ? this.decrypt(v) : null; }
 }

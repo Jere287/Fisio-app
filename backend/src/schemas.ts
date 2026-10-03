@@ -65,6 +65,9 @@ export const Booking = z.object({
   pin: z.string().nullable().optional(),
   physioLocation: z.object({ lat: z.number().nullable(), lng: z.number().nullable(), at: isoDate.nullable() }).nullable().optional(),
   bookedBy: z.object({ name: z.string(), verified: z.boolean() }).optional(),
+  tracking: z.object({ from: isoDate, active: z.boolean(), shareMine: z.boolean() }),
+  recording: z.object({ patient: z.boolean(), physio: z.boolean() }),
+  patientLocation: z.object({ lat: z.number(), lng: z.number(), at: isoDate.nullable(), atHome: z.boolean() }).nullable().optional(),
 });
 
 export const Exercise = z.object({ code: z.string(), name: z.string(), dose: z.string(), instructions: z.string(), video_url: z.string().nullable() });

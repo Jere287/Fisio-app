@@ -40,6 +40,13 @@
           "cameraPermission": "FisioCerca usa la cámara para fotografiar tu cédula y tomar tu selfie de verificación.",
           "photosPermission": "FisioCerca necesita acceso a tus fotos para subir documentos."
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "FisioCerca usa el micrófono solo si tú activas la grabación de audio de seguridad durante una visita.",
+          "enableBackgroundRecording": true
+        }
       ]
     ],
     "scheme": "fisiocerca",

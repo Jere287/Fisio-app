@@ -24,8 +24,9 @@ const FAQ: [string, [string, string][]][] = [
   ]],
   ['Seguridad y ubicación', [
     ['¿Cómo sé que el especialista es quien dice ser?', 'Verificamos su cédula con el Registro Civil, su título en la SENESCYT y el MSP, y sus antecedentes penales. Además, se toma una selfie cada día antes de conectarse.'],
-    ['¿Cómo funciona la ubicación?', 'Al reservar marcas en el mapa el punto exacto de tu puerta. El fisio solo ve tu dirección después de aceptar y navega con Google Maps o Waze. Mientras viene, lo ves en el mapa con el tiempo estimado. Solo puede marcar «Llegué» a menos de 150 m de tu puerta.'],
-    ['¿Ven mi ubicación todo el tiempo?', 'No. Tu ubicación solo se usa para buscar especialistas cerca y para la dirección de la cita. La del fisio se comparte solo mientras va en camino a tu casa.'],
+    ['¿Cómo funciona la ubicación?', 'Al reservar marcas en el mapa el punto exacto de tu puerta. El fisio solo ve tu dirección después de aceptar y navega con Google Maps o Waze. Desde 30 minutos antes de la cita ves al fisio en el mapa con el tiempo estimado, y él ve si estás en el domicilio. Solo puede marcar «Llegué» a menos de 150 m de tu puerta.'],
+    ['¿Ven mi ubicación todo el tiempo?', 'No. Se comparte solo desde 30 minutos antes de la cita hasta que el fisio llega. Si reservaste para un familiar y no vas a estar, tu ubicación no se comparte. El recorrido queda guardado 30 días como respaldo ante un reclamo y luego se borra.'],
+    ['¿Se graba la visita?', 'Solo si tú o el fisio activan la grabación de seguridad, y la otra persona siempre recibe un aviso. Es solo audio. Se guarda cifrada 30 días y nadie la escucha —ni tú, ni el fisio, ni el personal de FisioCerca—, salvo el equipo de seguridad si hay un reporte o una alerta. Después se borra.'],
     ['¿Qué hago si la persona en la puerta no es la del perfil?', 'No abras. Toca «No coincide» en la cita: cancelamos, suspendemos al especialista y te llama el equipo de seguridad.'],
   ]],
   ['Historia clínica y datos', [

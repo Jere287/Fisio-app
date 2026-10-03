@@ -31,7 +31,8 @@ Todos los perfiles, pagos y alertas son de ejemplo. El estado se guarda en el na
 - Historia clínica cifrada con registro de accesos.
 - Soporte, emergencias y panel de administración.
 - Idempotencia en reservas, tareas programadas (vencimientos y recordatorios) y contrato de respuestas tipado.
-- 59 pruebas automáticas contra una base de datos real.
+- Seguimiento mutuo de ubicación desde 30 minutos antes y grabación de audio de seguridad cifrada.
+- 69 pruebas automáticas contra una base de datos real.
 
 Cómo arrancarlo: [`backend/README.md`](backend/README.md). Arquitectura, seguridad y lo que falta para producción: [`docs/backend.md`](docs/backend.md).
 
@@ -39,9 +40,9 @@ Cómo arrancarlo: [`backend/README.md`](backend/README.md). Arquitectura, seguri
 
 `mobile/` es la app real para iPhone, Android y web: Expo, React Native y TypeScript. Una sola app con dos modos:
 
-- **Paciente:** buscar fisios cerca (en lista o en el mapa), reservar para sí o para un familiar, describir el dolor, pasar la revisión de seguridad, marcar su puerta en el mapa, ver al fisio en camino con el tiempo estimado, confirmar el rostro en la puerta, firmar el consentimiento, dar el PIN, calificar y ver su tratamiento.
-- **Fisio:** conectarse con la selfie del día, aceptar solicitudes, ver la dirección en el mapa y navegar con Google Maps o Waze, compartir su ubicación en camino, «Llegué» con geocerca, iniciar con PIN, nota SOAP con ejercicios, ganancias, documentos y horario.
-- **Ambos:** ayuda y garantías, botón de ayuda con confirmación, descargar sus datos y eliminar la cuenta.
+- **Paciente:** buscar fisios cerca (en lista o en el mapa), reservar para sí o para un familiar, describir el dolor, pasar la revisión de seguridad, marcar su puerta en el mapa, ver al fisio en el mapa desde 30 minutos antes con el tiempo estimado, confirmar el rostro en la puerta, firmar el consentimiento, dar el PIN, calificar y ver su tratamiento.
+- **Fisio:** conectarse con la selfie del día, aceptar solicitudes, ver la dirección en el mapa y navegar con Google Maps o Waze, ver si el paciente está en el domicilio y compartir su ubicación desde 30 minutos antes, «Llegué» con geocerca, iniciar con PIN, nota SOAP con ejercicios, ganancias, documentos y horario.
+- **Ambos:** grabación de audio de seguridad (con aviso a la otra parte), ayuda y garantías, botón de ayuda con confirmación, descargar sus datos y eliminar la cuenta.
 
 Los tipos de la API se generan del contrato OpenAPI del backend, así que un cambio incompatible en el servidor rompe la compilación de la app antes de llegar a producción. Cómo arrancarla: [`mobile/README.md`](mobile/README.md).
 

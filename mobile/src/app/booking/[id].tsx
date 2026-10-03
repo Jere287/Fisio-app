@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Linking } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError, call, client } from '@/api/client';
@@ -7,11 +7,12 @@ import { keys, useBooking, useExercises } from '@/api/queries';
 import type { Booking } from '@/api/types';
 import { currentCoords } from '@/lib/useLocation';
 import { useShareLocation } from '@/lib/useShareLocation';
+import { useSafetyRecorder } from '@/lib/useSafetyRecorder';
 import { distanceM, etaMinutes, formatDistance, googleMapsUrl, midpoint, wazeUrl, type LatLng } from '@/lib/geo';
 import { PlaceMap } from '@/ui/map';
 import { useConfirm } from '@/ui/Confirm';
 import { useNow } from '@/lib/useNow';
-import { dateTime, money } from '@/lib/format';
+import { dateTime, money, time } from '@/lib/format';
 import { STATUS, ACTIVE_STATUSES, flagLabel, painSummary } from '@/lib/labels';
 import { SignaturePad } from '@/ui/SignaturePad';
 import { Badge, Button, Card, Chip, ErrorState, Field, Loading, Notice, Row, Screen, Stack, Text } from '@/ui';
@@ -36,6 +37,7 @@ export default function BookingDetail() {
         <Badge testID="booking-status" label={STATUS[b.status].label} tone={STATUS[b.status].tone} />
       </Row>
       <Summary b={b} asPhysio={asPhysio} />
+      {b.mode === 'home' ? <SafetyRecorder b={b} me={asPhysio ? 'physio' : 'patient'} /> : null}
       {asPhysio ? <PhysioActions b={b} /> : <PatientActions b={b} />}
       {ACTIVE_STATUSES.includes(b.status) && b.status !== 'pending' ? <Sos b={b} /> : null}
     </Screen>
@@ -105,7 +107,7 @@ function PatientActions({ b }: { b: Booking }) {
       {dialog}
       {err ? <Notice tone="danger">{err}</Notice> : null}
       {b.status === 'pending' ? <Notice>Esperando que el especialista acepte. Si no responde en 30 minutos, liberamos el cobro retenido.</Notice> : null}
-      {b.status === 'en_route' && b.lat !== null && b.lng !== null ? <Tracking b={b} home={{ lat: b.lat, lng: b.lng }} /> : null}
+      {['confirmed', 'en_route'].includes(b.status) && b.mode === 'home' && b.lat !== null && b.lng !== null ? <Tracking b={b} home={{ lat: b.lat, lng: b.lng }} /> : null}
 
       {b.status === 'arrived' && !b.doorConfirmed ? (
         <Card tone="warn">
@@ -142,20 +144,68 @@ function PatientActions({ b }: { b: Booking }) {
   );
 }
 
-// Seguimiento del fisio en camino: mapa con los dos puntos, distancia y tiempo estimado.
+// Seguimiento mutuo: desde 30 minutos antes el paciente ve al fisio en el mapa (aunque todavía no salga)
+// y comparte su propia ubicación para que el fisio sepa que hay alguien en el domicilio.
 function Tracking({ b, home }: { b: Booking; home: LatLng }) {
   const now = useNow(5000);
+  const share = useShareLocation(b.id, b.tracking.shareMine, 'patient');
+  const name = b.physio?.name?.split(' ')[0] ?? 'Tu fisio';
+  if (!b.tracking.active) {
+    return <Notice testID="tracking-soon">{`Desde las ${time(b.tracking.from)} (30 minutos antes) verás a ${name} en el mapa hasta que llegue a tu puerta.`}</Notice>;
+  }
   const loc = b.physioLocation;
   const there = loc && loc.lat !== null && loc.lng !== null ? { lat: loc.lat, lng: loc.lng } : null;
   const d = there ? distanceM(there, home) : null;
   const ageS = loc?.at ? Math.round((now - new Date(loc.at).getTime()) / 1000) : null;
+  const status = d === null ? 'Esperando su ubicación…' : b.status === 'en_route' ? `A ${formatDistance(d)} · llega en unos ${etaMinutes(d)} min` : `Aún no sale · está a ${formatDistance(d)}`;
   return (
     <Card tone="brand" testID="en-route">
-      <Text variant="h2">{b.physio?.name?.split(' ')[0] ?? 'Tu fisio'} va en camino</Text>
-      <Text variant="small" testID="eta">{d !== null ? `A ${formatDistance(d)} · llega en unos ${etaMinutes(d)} min` : 'Esperando su ubicación…'}</Text>
+      <Text variant="h2">{b.status === 'en_route' ? `${name} va en camino` : `${name} se prepara para tu visita`}</Text>
+      <Text variant="small" testID="eta">{status}</Text>
       <PlaceMap testID="tracking-map" center={there ? midpoint(there, home) : home} spanKm={Math.max(0.8, ((d ?? 600) / 1000) * 1.8)} height={240}
-        points={[{ id: 'home', coords: home, kind: 'home', label: 'Tu casa' }, ...(there ? [{ id: 'physio', coords: there, kind: 'physio' as const, label: b.physio?.name?.split(' ')[0] ?? 'Fisio' }] : [])]} />
+        points={[{ id: 'home', coords: home, kind: 'home', label: 'Tu casa' }, ...(there ? [{ id: 'physio', coords: there, kind: 'physio' as const, label: name }] : [])]} />
       {ageS !== null && ageS > 90 ? <Text variant="tiny" color="warn">Ubicación de hace {Math.round(ageS / 60)} min: puede estar sin señal.</Text> : <Text variant="tiny" muted>Se actualiza sola cada pocos segundos.</Text>}
+      {b.tracking.shareMine ? <Text variant="tiny" muted testID="patient-sharing">{share.error ?? `Compartiendo tu ubicación con ${name} hasta que llegue, para que sepa que estás en casa.`}</Text> : null}
+    </Card>
+  );
+}
+
+// Grabación de audio de seguridad. Cualquiera de las dos partes la activa; la otra lo ve aquí y recibe un aviso.
+function SafetyRecorder({ b, me }: { b: Booking; me: 'patient' | 'physio' }) {
+  const live = ['arrived', 'in_progress'].includes(b.status);
+  const rec = useSafetyRecorder(b.id, live);
+  const [dialog, confirm] = useConfirm();
+  const qc = useQueryClient();
+  const otherRecording = me === 'patient' ? b.recording.physio : b.recording.patient;
+  if (!live && !rec.pending && !rec.recording) return null;
+  const mmss = `${String(Math.floor(rec.elapsedMs / 60000)).padStart(2, '0')}:${String(Math.floor(rec.elapsedMs / 1000) % 60).padStart(2, '0')}`;
+
+  const askStart = async () => {
+    const ok = await confirm({
+      title: 'Grabar el audio de la visita', confirm: 'Empezar a grabar', cancel: 'Ahora no',
+      message: `Solo se graba audio, no video. ${me === 'patient' ? 'Tu fisio' : 'El paciente'} recibirá un aviso. La grabación se guarda cifrada durante 30 días y nadie la escucha —ni tú, ni la otra persona, ni el personal de FisioCerca—, salvo el equipo de seguridad si hay un reporte o una alerta. Después se borra.`,
+    });
+    if (!ok) return;
+    await rec.start();
+    await qc.invalidateQueries({ queryKey: keys.booking(b.id) });
+  };
+
+  return (
+    <Card tone={rec.recording || otherRecording ? 'danger' : undefined} testID="safety-recorder">
+      {dialog}
+      <Text variant="label">Grabación de seguridad</Text>
+      {otherRecording ? <Text variant="small" testID="other-recording">{`● ${me === 'patient' ? 'Tu fisio' : 'El paciente'} está grabando el audio de la visita por seguridad.`}</Text> : null}
+      {rec.recording ? (
+        <Row style={{ justifyContent: 'space-between' }}>
+          <Text variant="small" color="danger" testID="recording-on">{`● Grabando audio · ${mmss}`}</Text>
+          <Button small kind="line" testID="recording-stop" title="Detener" onPress={() => { rec.stop().catch(() => {}); }} />
+        </Row>
+      ) : live ? (
+        <Button small kind="ghost" testID="recording-start" title="Grabar audio de la visita" onPress={() => { askStart().catch(e => Alert.alert('No se pudo grabar', (e as Error).message)); }} />
+      ) : null}
+      {rec.pending ? <Text variant="tiny" muted testID="recording-pending">{`Subiendo ${rec.pending} ${rec.pending === 1 ? 'tramo' : 'tramos'} de audio… no cierres la app.`}</Text> : null}
+      {rec.error ? <Text variant="tiny" color="danger">{rec.error}</Text> : null}
+      <Text variant="tiny" muted>Solo audio, cifrado y guardado 30 días. Únicamente lo revisa el equipo de seguridad si hay un reporte.</Text>
     </Card>
   );
 }
@@ -169,7 +219,7 @@ function Consent({ b }: { b: Booking }) {
     <Card testID="consent-card">
       <Text variant="h2">Consentimiento informado</Text>
       <Text variant="small" muted>
-        Autorizo la evaluación y el tratamiento de fisioterapia. Entiendo que puedo detenerlo en cualquier momento y que mis datos clínicos se guardan cifrados y solo los ve mi especialista.
+        Autorizo la evaluación y el tratamiento de fisioterapia. Entiendo que puedo detenerlo en cualquier momento y que mis datos clínicos se guardan cifrados y solo los ve mi especialista. Sé que, por seguridad, cualquiera de las dos partes puede grabar el audio de la visita: se guarda cifrado 30 días y solo lo revisa el equipo de seguridad si hay un reporte o una alerta.
         {self ? '' : ' Firmo como representante del paciente.'}
       </Text>
       <Field label="Nombre de quien firma" value={signer} onChangeText={setSigner} testID="signer-name" />
@@ -195,7 +245,9 @@ function PhysioActions({ b }: { b: Booking }) {
   const start = useAction(b, () => call(() => client.POST('/v1/bookings/{id}/start', { ...path(b), body: b.mode === 'home' ? { pin } : {} })));
   const err = errMsg(accept.error ?? reject.error ?? depart.error ?? arrive.error ?? start.error ?? cancel.error);
   const [dialog, confirm] = useConfirm();
-  const share = useShareLocation(b.id, b.status === 'en_route');
+  const share = useShareLocation(b.id, b.tracking.shareMine, 'physio');
+  const pl = b.patientLocation;
+  const bookerPresent = b.patient.relationship === 'self' || b.companion === 'booker';
   const home = b.mode === 'home' && b.lat !== null && b.lng !== null ? { lat: b.lat, lng: b.lng } : null;
 
   const askReject = async () => {
@@ -211,13 +263,18 @@ function PhysioActions({ b }: { b: Booking }) {
       {err ? <Notice tone="danger" testID="action-error">{err}</Notice> : null}
       {home && ['confirmed', 'en_route', 'arrived'].includes(b.status) ? (
         <Card testID="route-card">
-          <PlaceMap testID="route-map" center={home} spanKm={0.8} height={200} circle={{ center: home, meters: ARRIVAL_RADIUS_M }} points={[{ id: 'home', coords: home, kind: 'home', label: b.patient.name ?? 'Paciente' }]} />
+          <PlaceMap testID="route-map" center={home} spanKm={0.8} height={200} circle={{ center: home, meters: ARRIVAL_RADIUS_M }} points={[{ id: 'home', coords: home, kind: 'home', label: 'Domicilio' }, ...(pl ? [{ id: 'patient', coords: { lat: pl.lat, lng: pl.lng }, kind: 'me' as const, label: b.patient.name ?? 'Paciente' }] : [])]} />
           <Row>
             <Button flex small kind="ghost" title="Ir con Google Maps" onPress={() => open(googleMapsUrl(home))} />
             <Button flex small kind="ghost" title="Ir con Waze" onPress={() => open(wazeUrl(home))} />
           </Row>
-          {b.status === 'en_route' ? (
+          {['confirmed', 'en_route'].includes(b.status) && b.tracking.active ? (
+            <Text variant="small" testID="patient-presence">{!bookerPresent ? `Te recibe ${b.companionName ?? 'un familiar o cuidador'}: quien reservó no estará en la visita.` : pl ? (pl.atHome ? 'El paciente está en el domicilio ✓' : 'El paciente todavía no está en el domicilio') : 'Esperando la ubicación del paciente…'}</Text>
+          ) : null}
+          {b.tracking.shareMine && b.status !== 'arrived' ? (
             <Text variant="tiny" muted testID="sharing">{share.error ?? (share.distanceM !== null ? `Compartiendo tu ubicación con el paciente · estás a ${formatDistance(share.distanceM)}` : 'Compartiendo tu ubicación con el paciente…')}</Text>
+          ) : b.status === 'confirmed' ? (
+            <Text variant="tiny" muted testID="sharing-soon">{`Desde las ${time(b.tracking.from)} (30 minutos antes) el paciente verá tu ubicación y tú verás si está en casa.`}</Text>
           ) : null}
         </Card>
       ) : null}

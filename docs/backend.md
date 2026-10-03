@@ -56,7 +56,8 @@ pending ─► confirmed ─► en_route ─► arrived ─► in_progress ─�
 | Triaje | Dos niveles. **Emergencia** (dolor de pecho o falta de aire ahora, debilidad repentina, pérdida del control de la orina o las heces): no se reserva y se indica llamar al 911. **Médico primero** (fiebre con el dolor, caída fuerte reciente): se reserva solo si el paciente confirma que un médico ya lo evaluó; el fisio ve las señales en la cita. Las frases son concretas y con tiempo para que una secuela ya diagnosticada (por ejemplo, de un ACV) no se tome como emergencia. |
 | Familiar | Si el paciente tiene 75 años o más, es menor o no puede firmar, exige un acompañante. Si no puede firmar, el consentimiento lo firma su representante. |
 | Dirección | El fisio la ve solo después de aceptar. Nunca ve el PIN. |
-| En camino | La app del fisio envía su ubicación cada ~10 s; el paciente lo ve en el mapa con distancia, tiempo estimado y la hora de la última ubicación. |
+| Seguimiento mutuo | Desde **30 minutos antes** de una cita confirmada (o desde que el fisio sale, si es antes) hasta la llegada: el paciente ve al fisio en el mapa con distancia y tiempo estimado, y el fisio ve si el paciente está en el domicilio. Solo se pide la ubicación de quien reservó si estará en la visita. Al abrirse, las dos partes reciben un aviso. Durante la visita la ubicación sigue registrándose, pero solo para el equipo de seguridad. El recorrido se guarda 30 días como respaldo y luego se borra, salvo que la cita tenga un reporte o una alerta. |
+| Grabación de seguridad | Ver la sección 6. |
 | «Llegué» | Solo a menos de **150 m** del punto que marcó el paciente en el mapa. |
 | Consentimiento | Se firma una vez por paciente y especialista, con el dedo en la app. La firma llega como SVG (trazo vectorial, se rechaza si trae scripts o atributos de eventos) o como PNG. |
 | Iniciar | En visitas a domicilio exige consentimiento firmado, que el paciente confirme el rostro en la puerta y el **PIN** correcto (máximo 5 intentos). |
@@ -100,7 +101,22 @@ pending ─► confirmed ─► en_route ─► arrived ─► in_progress ─�
 | Contrato de respuestas | Cada ruta declara su esquema de salida con Zod (`src/schemas.ts`). Un campo que no esté declarado **no sale**, aunque la consulta lo traiga. De ese contrato se genera `openapi.json`, y de él los tipos de la app móvil. El CI falla si `openapi.json` no está al día. |
 | Tareas programadas | `src/jobs.ts`, cada minuto, con un candado de PostgreSQL para que solo corra una instancia: vence solicitudes sin respuesta a los 30 minutos (y libera el pago), recordatorios de 24 h y 1 h, aviso si una sesión pasa de 90 minutos y desconexión del fisio con documentos vencidos. Se activan con `JOBS_ENABLED=true`. |
 
-## 6. Mapa de la API
+## 6. Grabación de audio de seguridad
+
+Inspirada en la grabación de audio de Uber, adaptada a salud.
+
+- **Solo audio.** En fisioterapia el paciente puede estar parcialmente descubierto (por ejemplo, en piso pélvico). Grabar video sería desproporcionado y riesgoso.
+- **La activa cualquiera de las dos partes** durante la visita. La otra recibe un aviso y lo ve en la cita. El consentimiento informado lo menciona.
+- **Se sube por tramos de 5 minutos**, así lo grabado queda a salvo aunque el teléfono se apague o se pierda. Repetir un tramo por mala señal no lo duplica.
+- **Cifrado con AES-256-GCM** antes de guardarse, con la huella SHA-256 del audio original para probar que no se alteró.
+- **Nadie la escucha**: ni el paciente, ni el fisio, ni el personal en general. Solo el equipo de seguridad, y solo si la cita tiene un reporte o una alerta. Cada acceso queda en la auditoría.
+- **Se borra a los 30 días**, salvo que la cita siga en revisión.
+- Rutas: `POST /v1/bookings/:id/recording/start` y `/stop`, `POST /v1/bookings/:id/recordings` (cuerpo binario `audio/*`), y para seguridad `GET /v1/admin/bookings/:id/recordings` y `GET /v1/admin/recordings/:id/audio`.
+- Almacenamiento: interfaz `ObjectStorage` (`src/providers/storage.ts`). En desarrollo, disco local (`STORAGE_DIR`); en producción, S3 o Google Cloud Storage.
+
+**Antes de lanzarlo, revisarlo con un abogado.** Son datos de salud (categoría especial de la Ley Orgánica de Protección de Datos Personales) y el artículo 178 del COIP sanciona grabar sin consentimiento. Por eso el diseño exige aviso a la otra parte, consentimiento en los términos y en el consentimiento informado, acceso restringido y borrado automático.
+
+## 7. Mapa de la API
 
 La documentación interactiva completa está en `/docs` (OpenAPI 3). Resumen:
 
@@ -117,14 +133,14 @@ La documentación interactiva completa está en `/docs` (OpenAPI 3). Resumen:
 | Soporte | `POST/GET /v1/support/tickets` |
 | Admin | `/v1/admin/physios`, `/documents/:id/decision`, `/physios/:id/decision`, `/kyc/:id/decision`, `/tickets`, `/tickets/:id/resolve`, `/alerts`, `/metrics`, `/payouts/run` |
 
-## 7. Qué falta para producción
+## 8. Qué falta para producción
 
 Esto es lo que no se puede terminar sin contratos o credenciales de terceros. Cada pieza tiene su interfaz lista.
 
 1. **Adaptador de pagos** (`src/providers/payments.ts`). Implementar `authorize`, `capture`, `void`, `refund` y `charge` con la API de Payphone o Kushki. Hay que confirmar con ellos que soporten **retención y captura posterior**. Si no, se usa cobro inmediato con devolución.
 2. **Adaptador de verificación de identidad** (`src/providers/kyc.ts`): SDK móvil del proveedor más su webhook (ya implementado y con firma).
 3. **SMS real** (`src/providers/sms.ts`).
-4. **Almacenamiento de archivos**: fotos de cédula, selfies y PDF de documentos, con URLs firmadas de subida en S3 o Google Cloud Storage. Hoy la API recibe referencias (`fileKey`, `frontRef`).
+4. **Almacenamiento de archivos**: la interfaz ya existe (`ObjectStorage`) y la usan las grabaciones de seguridad. Falta el adaptador de S3 o Google Cloud Storage para producción, y usarla para fotos de cédula, selfies y PDF de documentos (hoy la API recibe referencias).
 5. **Notificaciones push** (Firebase): el punto de conexión está en `notify()`, en `src/context.ts`.
 6. **Ubicación en tiempo real**: el seguimiento ya funciona con envío cada ~10 s y consulta cada 5 s. Para más fluidez y menos consumo, conviene WebSockets o Server-Sent Events, y permiso de ubicación en segundo plano para seguir con la pantalla apagada.
 7. **Videollamada**: integrar un proveedor (Daily, Twilio Video o Agora) que entregue la sala al iniciar la cita.
@@ -132,7 +148,7 @@ Esto es lo que no se puede terminar sin contratos o credenciales de terceros. Ca
 9. **Infraestructura**: PostgreSQL administrado con respaldos diarios y réplica (AWS RDS, Google Cloud SQL o Supabase), secretos en un gestor de secretos, monitoreo de errores (Sentry) y logs centralizados.
 10. **Apps móviles**: la app está en `mobile/` (ver su README). Falta compilarla con EAS, publicarla en las tiendas y conectar el SDK del proveedor de identidad y la subida de fotos.
 
-## 8. Cómo desplegar
+## 9. Cómo desplegar
 
 1. Crear la base de datos PostgreSQL 16 administrada. Las extensiones `pgcrypto`, `cube`, `earthdistance` y `btree_gist` vienen incluidas en RDS, Cloud SQL y Supabase.
 2. Construir la imagen con `docker build -t fisiocerca-api backend/` y desplegarla en Cloud Run, AWS App Runner, Railway o Render.

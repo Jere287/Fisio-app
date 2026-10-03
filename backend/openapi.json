@@ -2460,6 +2460,70 @@
                         "verified"
                       ],
                       "additionalProperties": false
+                    },
+                    "tracking": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "active": {
+                          "type": "boolean"
+                        },
+                        "shareMine": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "active",
+                        "shareMine"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recording": {
+                      "type": "object",
+                      "properties": {
+                        "patient": {
+                          "type": "boolean"
+                        },
+                        "physio": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "patient",
+                        "physio"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "patientLocation": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "lat": {
+                          "type": "number"
+                        },
+                        "lng": {
+                          "type": "number"
+                        },
+                        "at": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "atHome": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "lat",
+                        "lng",
+                        "at",
+                        "atHome"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -2486,7 +2550,9 @@
                     "companionName",
                     "address",
                     "lat",
-                    "lng"
+                    "lng",
+                    "tracking",
+                    "recording"
                   ],
                   "additionalProperties": false
                 }
@@ -2728,6 +2794,70 @@
                           "verified"
                         ],
                         "additionalProperties": false
+                      },
+                      "tracking": {
+                        "type": "object",
+                        "properties": {
+                          "from": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "active": {
+                            "type": "boolean"
+                          },
+                          "shareMine": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "from",
+                          "active",
+                          "shareMine"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "recording": {
+                        "type": "object",
+                        "properties": {
+                          "patient": {
+                            "type": "boolean"
+                          },
+                          "physio": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "patient",
+                          "physio"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "patientLocation": {
+                        "nullable": true,
+                        "type": "object",
+                        "properties": {
+                          "lat": {
+                            "type": "number"
+                          },
+                          "lng": {
+                            "type": "number"
+                          },
+                          "at": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "atHome": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "lat",
+                          "lng",
+                          "at",
+                          "atHome"
+                        ],
+                        "additionalProperties": false
                       }
                     },
                     "required": [
@@ -2754,7 +2884,9 @@
                       "companionName",
                       "address",
                       "lat",
-                      "lng"
+                      "lng",
+                      "tracking",
+                      "recording"
                     ],
                     "additionalProperties": false
                   }
@@ -2972,6 +3104,70 @@
                         "verified"
                       ],
                       "additionalProperties": false
+                    },
+                    "tracking": {
+                      "type": "object",
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "active": {
+                          "type": "boolean"
+                        },
+                        "shareMine": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "active",
+                        "shareMine"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recording": {
+                      "type": "object",
+                      "properties": {
+                        "patient": {
+                          "type": "boolean"
+                        },
+                        "physio": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "patient",
+                        "physio"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "patientLocation": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "lat": {
+                          "type": "number"
+                        },
+                        "lng": {
+                          "type": "number"
+                        },
+                        "at": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "atHome": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "lat",
+                        "lng",
+                        "at",
+                        "atHome"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -2998,7 +3194,9 @@
                     "companionName",
                     "address",
                     "lat",
-                    "lng"
+                    "lng",
+                    "tracking",
+                    "recording"
                   ],
                   "additionalProperties": false
                 }
@@ -3157,7 +3355,7 @@
     },
     "/v1/bookings/{id}/location": {
       "post": {
-        "summary": "Enviar ubicación en vivo",
+        "summary": "Enviar ubicación en vivo (fisio)",
         "tags": [
           "bookings"
         ],
@@ -3169,10 +3367,14 @@
                 "type": "object",
                 "properties": {
                   "lat": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
                   },
                   "lng": {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
                   }
                 },
                 "required": [
@@ -3547,6 +3749,77 @@
                     "ok"
                   ],
                   "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{id}/patient-location": {
+      "post": {
+        "summary": "Enviar ubicación en vivo (paciente)",
+        "tags": [
+          "bookings"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "lat": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "lng": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                },
+                "required": [
+                  "lat",
+                  "lng"
+                ]
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "distanceM": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "distanceM"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -4479,6 +4752,273 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{id}/recording/start": {
+      "post": {
+        "summary": "Activar la grabación de audio de seguridad",
+        "tags": [
+          "recordings"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{id}/recording/stop": {
+      "post": {
+        "summary": "Detener la grabación de audio de seguridad",
+        "tags": [
+          "recordings"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/bookings/{id}/recordings": {
+      "post": {
+        "summary": "Subir un tramo de la grabación (cuerpo binario audio/*)",
+        "tags": [
+          "recordings"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            },
+            "in": "query",
+            "name": "seq",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+            },
+            "in": "query",
+            "name": "startedAt",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 14400000
+            },
+            "in": "query",
+            "name": "durationMs",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "duplicate": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "id",
+                    "duplicate"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/bookings/{id}/recordings": {
+      "get": {
+        "summary": "Grabaciones de una cita en revisión",
+        "tags": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "patient",
+                          "physio"
+                        ]
+                      },
+                      "seq": {
+                        "type": "number"
+                      },
+                      "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "duration_ms": {
+                        "type": "number"
+                      },
+                      "bytes": {
+                        "type": "number"
+                      },
+                      "content_type": {
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "role",
+                      "seq",
+                      "started_at",
+                      "duration_ms",
+                      "bytes",
+                      "content_type",
+                      "sha256"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/recordings/{id}/audio": {
+      "get": {
+        "summary": "Escuchar un tramo (queda auditado)",
+        "tags": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
           }
         }
       }

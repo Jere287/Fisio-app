@@ -17,6 +17,9 @@ const schema = z.object({
   KYC_WEBHOOK_SECRET: z.string().min(16).default('dev-kyc-webhook-secret'),
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_DAYS: z.coerce.number().default(30),
+  // Archivos (grabaciones de seguridad). «local» guarda en disco; en producción va un almacenamiento de objetos (S3 o equivalente).
+  STORAGE_PROVIDER: z.enum(['local', 'memory']).default('local'),
+  STORAGE_DIR: z.string().default('./data/storage'),
   JOBS_ENABLED: z.enum(['true', 'false']).default('true').transform(v => v === 'true'),
 });
 

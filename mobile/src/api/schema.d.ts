@@ -1580,6 +1580,23 @@ export interface paths {
                                 name: string;
                                 verified: boolean;
                             };
+                            tracking: {
+                                /** Format: date-time */
+                                from: string;
+                                active: boolean;
+                                shareMine: boolean;
+                            };
+                            recording: {
+                                patient: boolean;
+                                physio: boolean;
+                            };
+                            patientLocation?: {
+                                lat: number;
+                                lng: number;
+                                /** Format: date-time */
+                                at: string | null;
+                                atHome: boolean;
+                            } | null;
                         }[];
                     };
                 };
@@ -1698,6 +1715,23 @@ export interface paths {
                                 name: string;
                                 verified: boolean;
                             };
+                            tracking: {
+                                /** Format: date-time */
+                                from: string;
+                                active: boolean;
+                                shareMine: boolean;
+                            };
+                            recording: {
+                                patient: boolean;
+                                physio: boolean;
+                            };
+                            patientLocation?: {
+                                lat: number;
+                                lng: number;
+                                /** Format: date-time */
+                                at: string | null;
+                                atHome: boolean;
+                            } | null;
                         };
                     };
                 };
@@ -1785,6 +1819,23 @@ export interface paths {
                                 name: string;
                                 verified: boolean;
                             };
+                            tracking: {
+                                /** Format: date-time */
+                                from: string;
+                                active: boolean;
+                                shareMine: boolean;
+                            };
+                            recording: {
+                                patient: boolean;
+                                physio: boolean;
+                            };
+                            patientLocation?: {
+                                lat: number;
+                                lng: number;
+                                /** Format: date-time */
+                                at: string | null;
+                                atHome: boolean;
+                            } | null;
                         };
                     };
                 };
@@ -1968,7 +2019,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Enviar ubicación en vivo */
+        /** Enviar ubicación en vivo (fisio) */
         post: {
             parameters: {
                 query?: never;
@@ -2240,6 +2291,54 @@ export interface paths {
                             ok: boolean;
                         } & {
                             [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{id}/patient-location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enviar ubicación en vivo (paciente) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        lat: number;
+                        lng: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            distanceM: number;
                         };
                     };
                 };
@@ -3007,6 +3106,223 @@ export interface paths {
                             }[];
                         };
                     };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{id}/recording/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activar la grabación de audio de seguridad */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{id}/recording/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Detener la grabación de audio de seguridad */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/bookings/{id}/recordings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subir un tramo de la grabación (cuerpo binario audio/*) */
+        post: {
+            parameters: {
+                query: {
+                    seq: number;
+                    startedAt: string;
+                    durationMs: number;
+                };
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            /** Format: uuid */
+                            id: string;
+                            duplicate: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/bookings/{id}/recordings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Grabaciones de una cita en revisión */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            id: string;
+                            /** @enum {string} */
+                            role: "patient" | "physio";
+                            seq: number;
+                            /** Format: date-time */
+                            started_at: string;
+                            duration_ms: number;
+                            bytes: number;
+                            content_type: string;
+                            sha256: string;
+                        }[];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/recordings/{id}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Escuchar un tramo (queda auditado) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Default Response */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };

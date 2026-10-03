@@ -3,10 +3,14 @@
 // y la app exportada para web servida en APP_URL. Ver mobile/README.md.
 const { Buffer } = require('node:buffer');
 const { chromium } = require('playwright');
+const { execFileSync } = require('node:child_process');
 const fs = require('fs');
 const URL = process.env.APP_URL ?? 'http://localhost:8099';
 const API_LOG = process.env.API_LOG ?? 'api.log';
 const OUT = process.env.SHOTS_DIR ?? 'e2e/capturas';
+// Opcional: base de datos de pruebas, para «adelantar» la cita y abrir la ventana de seguimiento (30 min antes).
+const DB = process.env.E2E_DATABASE_URL;
+const sql = q => execFileSync('psql', [DB, '-tAc', q]).toString().trim();
 fs.mkdirSync(OUT, { recursive: true });
 const HOME = { latitude: -0.2046, longitude: -78.4876 }; // a ~50 m de Andrea Salazar
 const FAR = { latitude: -0.2120, longitude: -78.4950 };  // el fisio sale a ~1 km
@@ -30,9 +34,10 @@ async function login(p, local, intl) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  // Micrófono simulado para probar la grabación de seguridad.
+  const browser = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const mk = async geo => {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, geolocation: geo, permissions: ['geolocation'], locale: 'es-EC' });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, geolocation: geo, permissions: ['geolocation', 'microphone'], locale: 'es-EC' });
     await ctx.route(/tile\.openstreetmap\.org/, r => r.fulfill({ contentType: 'image/png', body: TILE }));
     return ctx.newPage();
   };
@@ -87,6 +92,20 @@ async function login(p, local, intl) {
   await shot(fis, '05-agenda');
   await fis.locator('[data-testid^="booking-"]', { hasText: 'Por confirmar' }).first().click();
   await fis.locator(T('accept')).click();
+  await fis.locator(T('depart')).waitFor();
+  const bookingId = fis.url().split('/booking/')[1];
+  if (DB) {
+    // La cita pasa a empezar en 20 minutos: se abre el seguimiento mutuo aunque el fisio no haya salido.
+    sql(`UPDATE bookings SET scheduled_at = now() + interval '20 minutes', ends_at = now() + interval '20 minutes' + make_interval(mins => duration_min) WHERE id = '${bookingId}'`);
+    await pat.locator(T('eta')).filter({ hasText: 'Aún no sale' }).waitFor({ timeout: 20000 });
+    console.log('Paciente (30 min antes):', await pat.locator(T('eta')).innerText());
+    await fis.locator(T('patient-presence')).filter({ hasText: 'en el domicilio ✓' }).waitFor({ timeout: 25000 });
+    console.log('Fisio (30 min antes):', await fis.locator(T('patient-presence')).innerText());
+    await shot(fis, '05a-fisio-ve-paciente');
+    await shot(pat, '05a-paciente-ve-fisio');
+  } else {
+    console.log('Sin E2E_DATABASE_URL: se omite la prueba de la ventana de 30 minutos.');
+  }
   await fis.locator(T('depart')).click();
   // En camino: el fisio comparte su ubicación y el paciente lo ve en el mapa con el tiempo estimado.
   await fis.locator(T('sharing')).filter({ hasText: 'estás a' }).waitFor({ timeout: 20000 });
@@ -128,6 +147,24 @@ async function login(p, local, intl) {
   await fis.locator(T('pin-input')).fill(pin);
   await fis.locator(T('start')).click();
   await fis.locator(T('complete-form')).waitFor({ timeout: 15000 });
+
+  // Grabación de seguridad: el fisio la activa, el paciente lo ve, se sube cifrada al detenerla.
+  await fis.locator(T('recording-start')).click();
+  await fis.locator(T('confirm-yes')).click();
+  await fis.locator(T('recording-on')).waitFor({ timeout: 15000 });
+  await pat.locator(T('other-recording')).waitFor({ timeout: 20000 });
+  console.log('Paciente:', await pat.locator(T('other-recording')).innerText());
+  await shot(pat, '09a-paciente-ve-grabacion');
+  await fis.waitForTimeout(3000);
+  await shot(fis, '09b-fisio-grabando');
+  await fis.locator(T('recording-stop')).click();
+  await fis.locator(T('recording-start')).waitFor({ timeout: 15000 });
+  await fis.locator(T('recording-pending')).waitFor({ state: 'detached', timeout: 30000 });
+  if (DB) {
+    const n = sql(`SELECT count(*) || ' tramo(s), ' || sum(bytes) || ' bytes, ' || string_agg(content_type, ',') FROM session_recordings WHERE booking_id = '${bookingId}'`);
+    console.log('Fisio: grabación subida y cifrada →', n);
+    if (n.startsWith('0')) throw new Error('No se subió la grabación');
+  }
   await fis.locator(T('assessment')).fill('Síndrome patelofemoral derecho, leve.');
   await fis.locator(T('plan')).fill('Fortalecimiento de cuádriceps 2 semanas; reevaluar.');
   await fis.locator(T('pain-before-6')).click();

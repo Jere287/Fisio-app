@@ -9,6 +9,7 @@ import { FieldCipher } from '../src/lib/crypto.js';
 import { ConsoleSms } from '../src/providers/sms.js';
 import { MockPayments } from '../src/providers/payments.js';
 import { MockKyc } from '../src/providers/kyc.js';
+import { MemoryStorage } from '../src/providers/storage.js';
 
 export const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(200, 1)]).toString('base64');
 
@@ -27,7 +28,7 @@ export async function setupEnv(): Promise<TestEnv> {
   const tables = (await db.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('schema_migrations', 'exercises')`)).rows.map(r => r.tablename);
   await db.query(`TRUNCATE ${tables.join(', ')} RESTART IDENTITY CASCADE`);
   const sms = new ConsoleSms(), payments = new MockPayments(), clock = new Clock();
-  const ctx: AppContext = { config, db, cipher: new FieldCipher(config.DATA_ENCRYPTION_KEY), sms, payments, kyc: new MockKyc(), now: clock.now };
+  const ctx: AppContext = { config, db, cipher: new FieldCipher(config.DATA_ENCRYPTION_KEY), sms, payments, kyc: new MockKyc(), storage: new MemoryStorage(), now: clock.now };
   const app = await buildApp(ctx, { logger: false });
   return { app, ctx, sms, payments, clock };
 }

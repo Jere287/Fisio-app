@@ -58,7 +58,8 @@ src/
 - **Datos vivos sin WebSockets (por ahora).** La cita activa se consulta cada 5 s y la lista cada 15 s. Al terminar una acción se invalidan las consultas afectadas.
 - **Firma en SVG.** El consentimiento se firma con el dedo y se envía como trazo vectorial: pesa pocos kilobytes y no necesita librerías nativas extra.
 - **Mapas.** En iPhone se usa Apple Maps y en Android Google Maps (`react-native-maps`, incluido en Expo Go). En web, Leaflet con OpenStreetMap. Los tres comparten la misma interfaz (`src/ui/map`). Para publicar en Android hace falta una llave de Google Maps en `GOOGLE_MAPS_ANDROID_KEY` (la lee `app.config.js`). Para la web en producción conviene un proveedor de mapas con contrato (Mapbox, MapTiler o Google) en `EXPO_PUBLIC_MAP_TILES`: los mapas públicos de OpenStreetMap no permiten mucho tráfico comercial.
-- **Ubicación.** El paciente marca su puerta en el mapa (tocando o arrastrando el punto); en el teléfono la dirección se completa sola con el GPS. Mientras el fisio va en camino, su app envía la ubicación cada ~10 s y el paciente lo ve con distancia y tiempo estimado. El fisio navega con Google Maps o Waze.
+- **Ubicación.** El paciente marca su puerta en el mapa (tocando o arrastrando el punto); en el teléfono la dirección se completa sola con el GPS. Desde 30 minutos antes de la cita las dos apps envían su ubicación cada ~10 s: el paciente ve al fisio con distancia y tiempo estimado, y el fisio ve si el paciente está en el domicilio. El backend decide cuándo compartir (`tracking.shareMine`). El fisio navega con Google Maps o Waze.
+- **Grabación de seguridad.** `useSafetyRecorder` graba con `expo-audio` en tramos de 5 minutos, mantiene la pantalla encendida y sube cada tramo al terminarlo, con reintentos. Si la visita termina, se detiene sola y sube lo que falte. La otra parte ve un aviso en la cita.
 - **Triaje en dos niveles.** Primero una pregunta de sí o no; solo si responde «sí» aparece la lista. Las señales de emergencia indican el 911; las de «médico primero» permiten reservar con autorización médica. La lógica está en `src/lib/labels.ts` y tiene pruebas.
 - **Confirmaciones.** Cancelar, rechazar, «No coincide» en la puerta, la alerta de ayuda y eliminar la cuenta piden confirmación y explican la consecuencia (por ejemplo, el cargo por cancelar tarde).
 - **Hora de Quito siempre.** Las fechas se muestran en UTC−5, aunque el teléfono esté en otra zona horaria.
@@ -69,9 +70,9 @@ src/
 `e2e/flujo-completo.cjs` recorre el flujo principal con dos navegadores a la vez:
 
 1. El paciente ve el mapa, prueba el triaje (emergencia y «médico primero») y reserva.
-2. El fisio acepta y sale; el paciente lo ve acercarse en el mapa; el fisio marca «Llegué».
+2. El fisio acepta. Con `E2E_DATABASE_URL`, la prueba adelanta la cita para abrir la ventana de 30 minutos: el paciente ve al fisio y el fisio ve que el paciente está en casa. El fisio sale y marca «Llegué».
 3. El paciente confirma el rostro en la puerta y firma.
-4. El fisio prueba un PIN incorrecto y luego el correcto, escribe la nota SOAP y termina.
+4. El fisio prueba un PIN incorrecto y luego el correcto, activa la grabación de seguridad (con micrófono simulado), el paciente ve el aviso, se sube el audio cifrado, y el fisio escribe la nota SOAP y termina.
 5. El paciente califica.
 6. El fisio ve sus ganancias; el paciente abre la ayuda y el diálogo de eliminar cuenta.
 
@@ -81,7 +82,7 @@ src/
 EXPO_PUBLIC_API_URL=http://localhost:3000 npx expo export --platform web
 npx serve dist -l 8099 -s
 # 3) La prueba (necesita Playwright instalado)
-APP_URL=http://localhost:8099 API_LOG=../backend/api.log node e2e/flujo-completo.cjs
+APP_URL=http://localhost:8099 API_LOG=../backend/api.log E2E_DATABASE_URL=postgres://… node e2e/flujo-completo.cjs
 ```
 
 Las capturas quedan en `e2e/capturas/`.
@@ -91,6 +92,7 @@ Las capturas quedan en `e2e/capturas/`.
 - Subir las fotos (cédula, selfie, documentos) con URLs prefirmadas. Hoy se envía una referencia; está marcado con `TODO` en el código.
 - Integrar el SDK del proveedor de verificación de identidad para la prueba de vida.
 - Notificaciones push (Expo Notifications + Firebase/APNs).
-- Ubicación en segundo plano para el fisio (hoy se comparte con la app abierta).
+- Ubicación en segundo plano (hoy se comparte con la app abierta). La grabación ya pide el modo en segundo plano.
+- Revisión legal de la grabación de seguridad (ver `docs/backend.md`, sección 6).
 - Compilar con EAS Build y publicar en App Store y Google Play.
 - `npm audit` marca alertas en dependencias de las herramientas de Expo (compilación y servidor de desarrollo). No viajan dentro de la app; se resuelven al actualizar el SDK.

@@ -4,6 +4,7 @@ import { FieldCipher } from './lib/crypto.js';
 import type { SmsProvider } from './providers/sms.js';
 import type { PaymentProvider } from './providers/payments.js';
 import type { KycProvider } from './providers/kyc.js';
+import type { ObjectStorage } from './providers/storage.js';
 
 // Dependencias compartidas por todos los módulos. Se inyectan para poder cambiarlas en pruebas.
 export interface AppContext {
@@ -13,6 +14,7 @@ export interface AppContext {
   sms: SmsProvider;
   payments: PaymentProvider;
   kyc: KycProvider;
+  storage: ObjectStorage;
   now: () => Date;
 }
 

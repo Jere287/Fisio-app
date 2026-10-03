@@ -17,6 +17,7 @@ import { bookingRoutes } from './modules/bookings.js';
 import { clinicalRoutes } from './modules/clinical.js';
 import { supportRoutes } from './modules/support.js';
 import { adminRoutes } from './modules/admin.js';
+import { recordingRoutes } from './modules/recordings.js';
 import { packageRoutes } from './modules/packages.js';
 
 export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
@@ -86,5 +87,6 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
   await supportRoutes(app, ctx);
   await packageRoutes(app, ctx);
   await adminRoutes(app, ctx);
+  await recordingRoutes(app, ctx);
   return app;
 }
