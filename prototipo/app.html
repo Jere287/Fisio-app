@@ -4,32 +4,33 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
 /* Layout: a demo panel beside a phone frame on desktop; on phones the frame fills the screen under a compact role bar. */
+/* Paleta: azul clínico pastel, con dorado solo para estrellas y avisos. */
 :root {
-  --bg: #E9EFEA; --surface: #F7FAF7; --card: #FFFFFF; --ink: #13241F; --muted: #5A6B64; --line: #DAE2DC;
-  --brand: #1D6A55; --brand-ink: #FFFFFF; --brand-soft: #DCEDE5;
+  --bg: #EAF2FA; --surface: #F6FAFE; --card: #FFFFFF; --ink: #14243A; --muted: #576A80; --line: #D6E3F0;
+  --brand: #2B66A3; --brand-ink: #FFFFFF; --brand-soft: #DCEBFA;
   --accent: #E39B2D; --accent-soft: #FBEBD0;
   --danger: #C2412D; --danger-soft: #F8E1DC; --ok: #2B7A4B; --ok-soft: #DDF0E3; --warn: #A86A12; --warn-soft: #FBEED5;
-  --map-land: #EDF1E8; --map-mount: #D3DFCC; --map-mount-line: #BCCDB4; --map-road: #FFFFFF; --map-road-edge: #D2D9CF; --map-park: #BFD9B5; --map-label: #6C7C72;
-  --shadow: 0 1px 2px rgba(19,36,31,.06), 0 8px 24px rgba(19,36,31,.08);
+  --map-land: #EEF4F9; --map-mount: #D9E5F1; --map-mount-line: #C3D4E5; --map-road: #FFFFFF; --map-road-edge: #D2DDE9; --map-park: #CDE6D6; --map-label: #687C92;
+  --shadow: 0 1px 2px rgba(20,36,58,.06), 0 8px 24px rgba(20,36,58,.08);
   --f-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
   --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0C1311; --surface: #111A17; --card: #18231F; --ink: #E5EEEA; --muted: #9AAEA5; --line: #283632;
-  --brand: #4DB592; --brand-ink: #06120D; --brand-soft: #1A3A30;
+  --bg: #0B111A; --surface: #101824; --card: #16212F; --ink: #E4EDF7; --muted: #98ABC0; --line: #253447;
+  --brand: #8BBCEB; --brand-ink: #071423; --brand-soft: #1B324D;
   --accent: #F0B357; --accent-soft: #3A2C14;
   --danger: #F07C66; --danger-soft: #3E1F19; --ok: #5CC28A; --ok-soft: #173826; --warn: #E3A94C; --warn-soft: #3A2D14;
-  --map-land: #16211D; --map-mount: #1F2E29; --map-mount-line: #2A3D36; --map-road: #2E3F39; --map-road-edge: #22312C; --map-park: #1D3B2C; --map-label: #8DA198;
+  --map-land: #131D29; --map-mount: #1B2939; --map-mount-line: #26384C; --map-road: #2A3B4F; --map-road-edge: #1F2E40; --map-park: #1B3A2E; --map-label: #8DA3BA;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
   color-scheme: dark;
 } }
 :root[data-theme="dark"] {
-  --bg: #0C1311; --surface: #111A17; --card: #18231F; --ink: #E5EEEA; --muted: #9AAEA5; --line: #283632;
-  --brand: #4DB592; --brand-ink: #06120D; --brand-soft: #1A3A30;
+  --bg: #0B111A; --surface: #101824; --card: #16212F; --ink: #E4EDF7; --muted: #98ABC0; --line: #253447;
+  --brand: #8BBCEB; --brand-ink: #071423; --brand-soft: #1B324D;
   --accent: #F0B357; --accent-soft: #3A2C14;
   --danger: #F07C66; --danger-soft: #3E1F19; --ok: #5CC28A; --ok-soft: #173826; --warn: #E3A94C; --warn-soft: #3A2D14;
-  --map-land: #16211D; --map-mount: #1F2E29; --map-mount-line: #2A3D36; --map-road: #2E3F39; --map-road-edge: #22312C; --map-park: #1D3B2C; --map-label: #8DA198;
+  --map-land: #131D29; --map-mount: #1B2939; --map-mount-line: #26384C; --map-road: #2A3B4F; --map-road-edge: #1F2E40; --map-park: #1B3A2E; --map-label: #8DA3BA;
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
   color-scheme: dark;
 }
@@ -61,7 +62,7 @@ h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
 .linkbtn { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; color: var(--muted); }
 .note { font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
 
-.phone { width: 390px; height: 800px; flex: none; background: var(--surface); border-radius: 44px; border: 10px solid #0E1714; box-shadow: var(--shadow), 0 30px 60px rgba(19,36,31,.18); position: relative; overflow: hidden; display: flex; flex-direction: column; }
+.phone { width: 390px; height: 800px; flex: none; background: var(--surface); border-radius: 44px; border: 10px solid #0F1B2A; box-shadow: var(--shadow), 0 30px 60px rgba(20,36,58,.18); position: relative; overflow: hidden; display: flex; flex-direction: column; }
 .statusbar { height: 40px; flex: none; display: flex; justify-content: space-between; align-items: center; padding: 0 26px; font-size: 13px; font-weight: 700; }
 .screen { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; scrollbar-width: thin; }
 .tabbar { flex: none; display: flex; border-top: 1px solid var(--line); background: var(--card); padding: 6px 4px 14px; }
@@ -268,7 +269,7 @@ textarea.input { min-height: 72px; resize: vertical; }
 .empty svg { width: 40px; height: 40px; opacity: .6; }
 
 /* Verificación */
-.cam { position: relative; width: 100%; aspect-ratio: 4 / 5; border-radius: 18px; overflow: hidden; background: #0B1210; }
+.cam { position: relative; width: 100%; aspect-ratio: 4 / 5; border-radius: 18px; overflow: hidden; background: #0B111A; }
 .cam video, .cam img.shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cam video.mirror { transform: scaleX(-1); }
 .cam-ov { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -323,14 +324,14 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
 .chip.sm { padding: 5px 10px; font-size: 12px; }
 .bell { position: relative; background: var(--card); border: 1px solid var(--line); flex: none; }
 .dotc { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--danger); color: #fff; font: 700 11px/18px var(--f-mono); text-align: center; }
-.call { position: relative; aspect-ratio: 4 / 5; border-radius: 20px; overflow: hidden; background: #0E1A16; color: #fff; }
+.call { position: relative; aspect-ratio: 4 / 5; border-radius: 20px; overflow: hidden; background: #0E1826; color: #fff; }
 .call-remote { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
-.call-self { position: absolute; right: 12px; top: 12px; width: 84px; height: 112px; border-radius: 12px; background: #2A3A35; border: 2px solid rgba(255,255,255,.3); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.call-self { position: absolute; right: 12px; top: 12px; width: 84px; height: 112px; border-radius: 12px; background: #2A3A4D; border: 2px solid rgba(255,255,255,.3); display: grid; place-items: center; font-size: 12px; font-weight: 700; }
 .call-time { position: absolute; top: 12px; left: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(0,0,0,.45); font-size: 13px; }
 .call-bar { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; justify-content: center; gap: 14px; }
 .callbtn { width: 50px; height: 50px; border-radius: 50%; border: 0; background: rgba(255,255,255,.18); color: #fff; display: grid; place-items: center; }
 .callbtn svg { width: 22px; height: 22px; }
-.callbtn.off { background: #fff; color: #0E1A16; }
+.callbtn.off { background: #fff; color: #0E1826; }
 .faq { border-bottom: 1px solid var(--line); padding: 10px 0; }
 .faq summary { font-weight: 600; font-size: 14px; cursor: pointer; }
 .faq p { margin: 6px 0 0; color: var(--muted); }
@@ -340,6 +341,11 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
 details.soap { display: flex; flex-direction: column; gap: 6px; }
 details.soap summary { display: flex; justify-content: space-between; cursor: pointer; list-style: none; }
 details.soap[open] summary { margin-bottom: 6px; }
+
+/* v5 */
+.third { border: 1.5px solid var(--brand); }
+.guarantee { background: var(--card); border: 1.5px solid var(--brand); }
+.credit-line { color: var(--ok); }
 
 @media (max-width: 820px) {
   .stage { flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
@@ -407,6 +413,7 @@ body.tablet .painsvg { max-width: 520px; align-self: center; }
         <li>Como Paciente, confirma que es la persona del perfil y dale tu PIN. Termina y califiquen.</li>
         <li>Como Fisio, escribe la nota de evolución y asigna ejercicios. Como Paciente, ábrelos en Tratamiento.</li>
         <li>Prueba «¿Qué te duele?» en Explorar, una valoración por videollamada y «Reportar un problema» en Citas.</li>
+        <li>Reserva para la abuela Carmen y prueba «Mi fisio no llegó» para ver la devolución. Las preguntas están en Cuenta › Ayuda y garantías.</li>
         <li>En Fisio › Perfil prueba el registro de un fisio nuevo. En Admin mira Negocio y el Plan de lanzamiento.</li>
       </ol>
     </div>
@@ -535,15 +542,15 @@ const SEED_EARN = [
   { d: 'Lun', who: 'Jorge Mena', p: 30 }, { d: 'Lun', who: 'Ana Cárdenas', p: 30 }, { d: 'Mar', who: 'Patricio Ruiz', p: 30 },
   { d: 'Mié', who: 'Jorge Mena', p: 30 }, { d: 'Jue', who: 'Sofía León', p: 30 }, { d: 'Jue', who: 'Ana Cárdenas', p: 30 },
 ];
-const CLIENT_REQ = { id: 'r-seed', client: { name: 'Jorge Mena', initials: 'JM', hue: '#59607A', rating: 4.9, sessions: 7, verified: true }, fisioId: 'f1', motivo: 'Dolor lumbar después de jugar fútbol el fin de semana.', address: 'Av. 6 de Diciembre y Whymper, edificio Torres del Parque, depto 5B', ref: 'Portón negro junto a la farmacia', barrio: 'La Floresta', dist: 1.4, date: 'Hoy', time: '17:00', price: 30, status: 'pendiente', pin: '3907', seed: true };
+const CLIENT_REQ = { id: 'r-seed', client: { name: 'Jorge Mena', initials: 'JM', hue: '#59607A', rating: 4.9, sessions: 7, verified: true }, fisioId: 'f1', eva: 6, pain: { zones: ['Espalda baja'], since: 'Menos de 1 semana', type: ['Punzante'], worse: ['Agacharse', 'Estar sentado'], meds: '' }, motivo: 'Me empezó a doler el domingo después de jugar fútbol. En la mañana me cuesta levantarme.', address: 'Av. 6 de Diciembre y Whymper, edificio Torres del Parque, depto 5B', ref: 'Portón negro junto a la farmacia', barrio: 'La Floresta', dist: 1.4, date: 'Hoy', time: '17:00', price: 30, status: 'pendiente', pin: '3907', seed: true };
 
 // ---------- State ----------
-const KEY = 'fisiocerca-demo-v4';
+const KEY = 'fisiocerca-demo-v5';
 const fresh = () => ({
   role: 'cliente',
   views: { cliente: { name: 'welcome' }, fisio: { name: 'inicio' }, admin: { name: 'cola' } },
   user: { name: 'Daniela Paredes', cedula: '', phone: '', selfie: '', verified: false, kycStatus: 'none', contacto: 'Mamá · 099 812 3344' },
-  family: [{ id: 'me', name: 'Daniela Paredes', rel: 'Yo' }, { id: 'rosa', name: 'Rosa Paredes', rel: 'Mamá · 72 años' }],
+  family: [{ id: 'me', name: 'Daniela Paredes', rel: 'Yo', age: 32 }, { id: 'rosa', name: 'Rosa Paredes', rel: 'Mamá · 72 años', age: 72 }, { id: 'carmen', name: 'Carmen Paredes', rel: 'Abuela · 84 años', age: 84 }], credit: 0,
   treatment: SEED_TREATMENT(), prefs: { lock: true, r24: true, r1: true }, launch: {}, noteDraft: null,
   kyc: null, biz: { fisios: 50, ses: 8, precio: 30, com: 15, fee: 0.99, pro: 20, nuevos: 300, mkt: 1500, equipo: 1200, infra: 350 },
   filter: 'Todas', mode: 'agendar', sel: null,
@@ -832,8 +839,8 @@ function kCamera() {
     </div>`;
   }
   const fallback = selfie
-    ? `<div class="cam-fb" id="camFallback"><svg viewBox="0 0 120 150" width="46%"><ellipse cx="60" cy="62" rx="34" ry="42" fill="#6c8a7f"/><ellipse cx="60" cy="160" rx="58" ry="46" fill="#6c8a7f"/></svg></div>`
-    : `<div class="cam-fb" id="camFallback"><svg viewBox="0 0 160 100" width="62%"><rect x="2" y="2" width="156" height="96" rx="10" fill="#6c8a7f"/><rect x="12" y="16" width="38" height="48" rx="4" fill="#4f6d62"/>${[18, 30, 42, 54].map(y => `<rect x="60" y="${y}" width="${y === 54 ? 50 : 84}" height="6" rx="3" fill="#4f6d62"/>`).join('')}</svg></div>`;
+    ? `<div class="cam-fb" id="camFallback"><svg viewBox="0 0 120 150" width="46%"><ellipse cx="60" cy="62" rx="34" ry="42" fill="#7389A3"/><ellipse cx="60" cy="160" rx="58" ry="46" fill="#7389A3"/></svg></div>`
+    : `<div class="cam-fb" id="camFallback"><svg viewBox="0 0 160 100" width="62%"><rect x="2" y="2" width="156" height="96" rx="10" fill="#7389A3"/><rect x="12" y="16" width="38" height="48" rx="4" fill="#566C86"/>${[18, 30, 42, 54].map(y => `<rect x="60" y="${y}" width="${y === 54 ? 50 : 84}" height="6" rx="3" fill="#566C86"/>`).join('')}</svg></div>`;
   return `${kTop(title)}
   <div class="pad">
     ${kycProgress()}
@@ -982,7 +989,7 @@ function runLiveness() {
 }
 function sampleCedula() {
   const c = document.createElement('canvas'); c.width = 520; c.height = 650; const x = c.getContext('2d');
-  x.fillStyle = '#2B3431'; x.fillRect(0, 0, 520, 650);
+  x.fillStyle = '#2B3440'; x.fillRect(0, 0, 520, 650);
   x.save(); x.translate(260, 325); x.rotate(-0.03);
   x.fillStyle = '#E8EFF2'; x.beginPath(); x.roundRect(-220, -140, 440, 280, 18); x.fill();
   x.fillStyle = '#9DB7C4'; x.fillRect(-220, -140, 440, 46);
@@ -997,7 +1004,7 @@ function sampleCedula() {
 }
 function sampleCedulaBack() {
   const c = document.createElement('canvas'); c.width = 520; c.height = 650; const x = c.getContext('2d');
-  x.fillStyle = '#2B3431'; x.fillRect(0, 0, 520, 650);
+  x.fillStyle = '#2B3440'; x.fillRect(0, 0, 520, 650);
   x.save(); x.translate(260, 325); x.rotate(0.02);
   x.fillStyle = '#E8EFF2'; x.beginPath(); x.roundRect(-220, -140, 440, 280, 18); x.fill();
   x.fillStyle = '#B9C7CE'; x.beginPath(); x.roundRect(100, -110, 96, 120, 10); x.fill();
@@ -1192,14 +1199,15 @@ function cBook() {
   const d = S.draft, f = fisioById(d.fisioId);
   const ds = days();
   const video = d.mode === 'video';
-  const ok = d.time != null && d.motivo.trim().length > 4 && (video || (d.address.trim().length > 4 && d.pinOk)) && !d.flags.length;
+  const ok = bookOk(d);
   const pack = d.pay === 'pack', canPack = !video && S.treatment.pack > 0 && d.fisioId === S.treatment.fisioId;
-  const base = video ? VIDEO_PRICE : f.price, total = pack ? 0 : base + FEE;
+  const base = video ? VIDEO_PRICE : f.price, credit = pack ? 0 : Math.min(S.credit, base + FEE), total = pack ? 0 : base + FEE - credit;
   return `${topbar(video ? 'Reservar videollamada' : 'Reservar sesión', 'profile')}
   <div class="pad">
     <div class="row">${av(f, 'sm')}<div class="grow"><b>${esc(f.name)}</b><div class="small muted">${video ? 'Valoración por videollamada · 30 min' : esc(f.specs.join(' · '))}</div></div><b class="mono">$${base}</b></div>
     <div class="stack"><span class="h-sec">¿Para quién es la sesión?</span><div class="tags">${S.family.map(m => `<button class="chip" data-forwho="${m.id}" aria-pressed="${d.forWho === m.id}">${esc(m.name.split(' ')[0])} · ${esc(m.rel)}</button>`).join('')}</div>
-      <span class="tiny muted">Si es para un menor de edad, un adulto responsable debe estar presente durante toda la sesión.</span></div>
+      <span class="tiny muted">¿Es para alguien más? Agrégalo en Cuenta › Mi familia. Si es un menor de edad, un adulto responsable debe estar presente.</span></div>
+    ${d.forWho !== 'me' ? thirdSection(d) : ''}
     <div class="card stack"><b class="small">Antes de reservar: ¿tienes alguno de estos síntomas?</b>
       ${RED_FLAGS.map((t, i) => `<label class="flag"><input type="checkbox" id="rf${i}" ${d.flags.includes(i) ? 'checked' : ''}><span>${t}</span></label>`).join('')}
       ${d.flags.length ? `<div class="callout danger">${ic('alert')}<span><b>La fisioterapia no es lo indicado ahora.</b> Estos síntomas necesitan atención médica. Llama al <b class="mono">911</b> o acude a emergencias. Si no es urgente, consulta primero con un médico.</span></div>` : '<span class="tiny muted">Si no tienes ninguno, continúa. Es el mismo filtro que usan los fisios en la primera evaluación.</span>'}</div>
@@ -1213,8 +1221,7 @@ function cBook() {
       ${d.pinOk ? '<span class="tiny muted">El fisio solo podrá marcar «Llegué» cuando esté a menos de 150 m de este punto.</span>' : '<span class="tiny muted">Toca el mapa donde está tu entrada. Así el fisio no se pierde y la app puede comprobar que realmente llegó.</span><button class="btn small ghost" data-act="pinConfirm">Confirmar ubicación</button>'}
     </div>
     <div class="field"><label for="b-ref">Referencia (opcional)</label><input class="input" id="b-ref" value="${esc(d.ref)}" placeholder="Ej: edificio azul, timbre 3B"></div>`}
-    <div class="field"><label for="b-mot">¿Qué te pasa?</label><textarea class="input" id="b-mot" placeholder="Ej: dolor de rodilla derecha después de correr, hace 2 semanas">${esc(d.motivo)}</textarea></div>
-    <div class="field"><div class="row"><label class="grow" for="b-eva">¿Cuánto dolor tienes ahora?</label><b class="mono small" id="b-evaV">${d.eva}/10</b></div><input type="range" id="b-eva" min="0" max="10" value="${d.eva}"><div class="row tiny muted"><span class="grow">Sin dolor</span><span>El peor imaginable</span></div></div>
+    ${painSection(d)}
     <div class="field"><span class="small" style="font-weight:600">Orden médica o exámenes (opcional)</span><label class="upload" for="b-order">${ic(d.order ? 'check' : 'upload')}<span>${d.order ? esc(d.order) : 'Subir foto o PDF (radiografía, resonancia, orden del médico)'}</span><input type="file" accept="image/*,application/pdf" id="b-order"></label></div>
     <div class="stack"><span class="h-sec">Pago</span>
       ${canPack ? `<button class="payopt" data-pay="pack" aria-pressed="${pack}"><span class="radio"></span><span class="grow" style="flex:1"><b>Paquete prepagado</b><div class="tiny muted">Te quedan ${S.treatment.pack} sesiones</div></span>${ic('check', 'width="20" height="20"')}</button>` : ''}
@@ -1224,12 +1231,13 @@ function cBook() {
     <div class="card money">
       <span>${video ? 'Valoración por videollamada (30 min)' : 'Sesión de fisioterapia (60 min)'}</span><b>${pack ? 'Paquete' : money(base)}</b>
       <span>Tarifa de servicio</span><b>${money(pack ? 0 : FEE)}</b>
+      ${credit ? `<span class="credit-line">Crédito FisioCerca</span><b class="credit-line">−${money(credit)}</b>` : ''}
       <span class="tot">Total</span><b class="tot">${money(total)}</b>
     </div>
     <div class="callout">${ic('lock')}<span>${pack ? 'Usaremos 1 sesión de tu paquete cuando la sesión termine.' : `Retenemos ${money(total)} ahora y lo cobramos solo cuando la sesión termine. Si el fisio no confirma, se libera de inmediato.`}</span></div>
-    <p class="tiny muted" style="margin:0">Cancelación gratis hasta 12 horas antes. Después se cobra el 50% al especialista que ya reservó ese tiempo.</p>
+    <div class="row tiny muted" style="flex-wrap:wrap;gap:4px 10px"><span>Cancelación gratis hasta 12 horas antes.</span><span>Si tu fisio no llega, te devolvemos el 100%.</span><button class="linkbtn" data-go="ayuda">Ver garantías</button></div>
     <button class="btn" data-act="confirmBook" ${ok ? '' : 'disabled'}>Solicitar a ${esc(f.name.split(' ')[0])}</button>
-    ${ok || d.flags.length ? '' : '<span class="hint" style="text-align:center">Elige una hora, confirma tu ubicación y cuéntanos el motivo para continuar.</span>'}
+    ${ok || d.flags.length ? '' : '<span class="hint" style="text-align:center">Elige una hora, confirma tu ubicación y cuéntanos dónde te duele para continuar.</span>'}
   </div>`;
 }
 function statusText(b) {
@@ -1273,6 +1281,7 @@ function cActiva() {
     ${head}${sos}
     <button class="btn line" data-act="longSession">Simular: la sesión pasó de 90 min</button>
     <button class="btn ghost" data-act="simFinish">Simular: el fisio termina la sesión</button>`;
+  if (!isVideo(b) && ['confirmada', 'en_camino'].includes(b.status)) body += `<button class="btn line" data-act="noShow">${ic('clock')}Mi fisio no llegó</button>`;
   if (isVideo(b) && b.status === 'confirmada') body = `${head}<div class="card stack"><div class="kv"><span class="muted">Fecha</span><b>${esc(b.date)}, ${esc(b.time)}</b></div><div class="kv"><span class="muted">Modalidad</span><b>Videollamada · 30 min</b></div><div class="kv"><span class="muted">Pago retenido</span><b class="mono">${money(b.price + FEE)}</b></div></div>
     ${b.consentSigned ? `<button class="btn" data-act="joinVideo">${ic('video')}Entrar a la videollamada</button><span class="hint" style="text-align:center">El acceso se abre 10 minutos antes. En la demo puedes entrar ya.</span>` : consentCard(b)}`;
   if (isVideo(b) && b.status === 'en_curso') body = `${callView(f.name, initials(f.name), f.hue)}<button class="btn danger" data-act="endVideo">Colgar y terminar</button>`;
@@ -1288,7 +1297,7 @@ function cRate(b, f) {
     <div class="tags" style="justify-content:center">${TAGS.map(t => `<button class="chip" data-tag="${t}" aria-pressed="${r.tags.includes(t)}">${t}</button>`).join('')}</div>
     <div class="field"><label for="r-text">Comentario</label><textarea class="input" id="r-text" placeholder="Cuéntanos tu experiencia">${esc(r.text)}</textarea></div>
     <div class="stack"><span class="small" style="font-weight:600">Propina (100% para el especialista)</span><div class="tags">${[0, 2, 3, 5].map(t => `<button class="chip" data-tip="${t}" aria-pressed="${r.tip === t}">${t ? '$' + t : 'Sin propina'}</button>`).join('')}</div></div>
-    <div class="card money"><span>Sesión</span><b>${money(b.price)}</b><span>Tarifa de servicio</span><b>${money(FEE)}</b>${r.tip ? `<span>Propina</span><b>${money(r.tip)}</b>` : ''}<span class="tot">Cobrado a Visa •••• 4242</span><b class="tot">${money(b.price + FEE + r.tip)}</b></div>
+    <div class="card money"><span>Sesión</span><b>${money(b.price)}</b><span>Tarifa de servicio</span><b>${money(FEE)}</b>${r.tip ? `<span>Propina</span><b>${money(r.tip)}</b>` : ''}<span class="tot">Cobrado a Visa •••• 4242</span><b class="tot">${money(charged(b) + r.tip)}</b></div>
     <button class="btn" data-act="sendRating" ${r.s ? '' : 'disabled'}>Enviar calificación</button>
   </div>`;
 }
@@ -1298,7 +1307,7 @@ function cCitas() {
   return `<div class="topbar"><h2 style="padding-left:6px;flex:1">Mis citas</h2><button class="btn small ghost" data-act="helpModal">${ic('help')}Ayuda</button></div>
   <div class="pad">${list.length ? list.map(b => { const f = fisioById(b.fisioId), done = b.status === 'completada';
     const actions = act === b ? `<button class="btn small ghost" style="flex:1" data-go="activa">Ver cita</button>` : done ? `<button class="btn small line" style="flex:1" data-report="${b.id}">Reportar un problema</button><button class="btn small ghost" style="flex:1" data-book="${f.id}">Reservar de nuevo</button>` : '';
-    return `<div class="card stack"><div class="row">${av(f, 'sm')}<div class="grow"><b class="small">${esc(f.name)}</b><div class="tiny muted">${esc(b.date)} · ${esc(b.time)} · ${isVideo(b) ? 'Videollamada' : 'A domicilio'} · ${b.pay === 'pack' ? 'Paquete' : money(b.price + FEE)}</div></div>${badge(b)}</div>${actions ? `<div class="row">${actions}</div>` : ''}</div>`; }).join('')
+    return `<div class="card stack"><div class="row">${av(f, 'sm')}<div class="grow"><b class="small">${esc(f.name)}</b><div class="tiny muted">${esc(b.date)} · ${esc(b.time)} · ${isVideo(b) ? 'Videollamada' : 'A domicilio'} · ${b.pay === 'pack' ? 'Paquete' : money(charged(b))}${b.refunded ? ' · devuelto' : ''}${b.third ? ` · para ${esc(b.forName.split(' ')[0])}` : ''}</div></div>${badge(b)}</div>${actions ? `<div class="row">${actions}</div>` : ''}</div>`; }).join('')
     : `<div class="empty">${ic('cal')}<span>Aún no tienes citas. Busca un especialista cerca de ti.</span><button class="btn small" data-go="home">Explorar</button></div>`}
     ${mine.length ? `<span class="h-sec">Tus casos de soporte</span><div class="card list">${mine.map(t => `<div class="li"><div class="grow"><b class="small">#${t.id} · ${esc(t.reasonLabel)}</b><div class="tiny muted">${esc(t.status === 'resuelto' ? t.resolution : 'Lo estamos revisando. Te respondemos en menos de 24 horas.')}</div></div><span class="badge ${t.status === 'resuelto' ? '' : 'warn'}">${t.status === 'resuelto' ? 'Resuelto' : 'Abierto'}</span></div>`).join('')}</div>` : ''}
   </div>`;
@@ -1316,7 +1325,8 @@ function cPerfil() {
       <div class="card list"><div class="li">${ic('heart', 'width="20" height="20"')}<div class="grow"><b class="small">Contacto de confianza</b><div class="tiny muted">${esc(u.contacto)}</div></div></div>
       <div class="li">${ic('lock', 'width="20" height="20"')}<div class="grow"><b class="small">Número enmascarado</b><div class="tiny muted">Las llamadas pasan por la app</div></div><span class="badge">Activo</span></div>
       <div class="li">${ic('pin', 'width="20" height="20"')}<div class="grow"><b class="small">Ubicación</b><div class="tiny muted">Solo se comparte durante una cita activa</div></div></div></div></div>
-    <div class="stack"><span class="h-sec">Pagos</span><div class="card list"><div class="li">${ic('wallet', 'width="20" height="20"')}<div class="grow"><b class="small">Visa •••• 4242</b><div class="tiny muted">Predeterminada · guardada por la pasarela, no por nosotros</div></div></div></div></div>
+    <div class="stack"><span class="h-sec">Pagos</span><div class="card list"><div class="li">${ic('wallet', 'width="20" height="20"')}<div class="grow"><b class="small">Visa •••• 4242</b><div class="tiny muted">Predeterminada · guardada por la pasarela, no por nosotros</div></div></div>${S.credit ? `<div class="li">${ic('check', 'width="20" height="20"')}<div class="grow"><b class="small">Crédito FisioCerca</b><div class="tiny muted">Se aplica solo en tu próxima reserva</div></div><b class="mono credit-line">${money(S.credit)}</b></div>` : ''}</div></div>
+    <button class="card row" data-go="ayuda" style="text-align:left;width:100%;color:var(--ink)">${ic('help', 'width="22" height="22"')}<div class="grow"><b class="small">Ayuda y garantías</b><div class="tiny muted">Devoluciones, cancelaciones, citas para familiares y seguridad</div></div>${ic('back', 'width="16" height="16" style="transform:rotate(180deg)"')}</button>
     <div class="stack"><div class="row"><span class="h-sec grow">Mi familia</span><button class="btn small ghost" data-act="familyModal">Agregar</button></div>
       <div class="card list">${S.family.map(m => `<div class="li"><div class="avatar sm" style="background:#59607A">${esc(initials(m.name))}</div><div class="grow"><b class="small">${esc(m.name)}</b><div class="tiny muted">${esc(m.rel)}</div></div></div>`).join('')}</div></div>
     <div class="stack"><span class="h-sec">Recordatorios</span><div class="card list">
@@ -1441,7 +1451,8 @@ function exModal(id) {
 const consentText = f => `Autorizo a ${f.name}, fisioterapeuta con título registrado en la SENESCYT y en el Ministerio de Salud Pública, a realizar mi evaluación y tratamiento de fisioterapia en mi domicilio. Me explicaron en qué consiste, sus beneficios, sus riesgos más comunes (dolor muscular o molestias pasajeras) y las alternativas. Puedo hacer preguntas y retirar este consentimiento en cualquier momento. Mis datos se guardan en mi historia clínica electrónica, protegida según la Ley Orgánica de Protección de Datos Personales.`;
 function consentCard(b) {
   const f = fisioById(b.fisioId);
-  return `<div class="card stack"><span class="eyebrow">Consentimiento informado</span><b>Antes de tu primera sesión con ${esc(f.name.split(' ')[0])}</b>
+  const who = b.third ? `<div class="small"><span class="muted">Paciente: </span><b>${esc(b.forName)}</b> (${esc(b.forRel)})<br><span class="muted">Firma: </span>${b.third.canSign ? esc(b.forName) : `${esc(S.user.name)}, como su representante`}</div>` : '';
+  return `<div class="card stack"><span class="eyebrow">Consentimiento informado</span><b>Antes de la primera sesión con ${esc(f.name.split(' ')[0])}</b>${who}
     <div class="small consent-text">${esc(consentText(f))}</div>
     <canvas id="sig" class="sig" width="600" height="200" aria-label="Espacio para tu firma"></canvas>
     <div class="row"><button class="btn small line" data-act="sigClear">Borrar</button><button class="btn small" style="flex:1" data-act="sigSave">Firmar consentimiento</button></div>
@@ -1451,7 +1462,7 @@ let sigDrawn = false;
 function setupSig() {
   const c = document.getElementById('sig'); if (!c) return;
   sigDrawn = false;
-  const x = c.getContext('2d'); x.lineWidth = 4; x.lineCap = 'round'; x.strokeStyle = '#13241F';
+  const x = c.getContext('2d'); x.lineWidth = 4; x.lineCap = 'round'; x.strokeStyle = '#14243A';
   let drawing = false;
   const pos = e => { const r = c.getBoundingClientRect(); return [(e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height]; };
   c.addEventListener('pointerdown', e => { drawing = true; c.setPointerCapture(e.pointerId); x.beginPath(); x.moveTo(...pos(e)); });
@@ -1619,6 +1630,126 @@ function schedCard() {
 }
 function applySched() { const f = SEED_FISIOS[0], s = S.fisio.sched; f.radius = s.radius; f.video = s.video; f.womenOnly = s.womenOnly; }
 
+// ---------- Descripción del dolor ----------
+const PAIN_ZONES = ['Cuello', 'Hombro', 'Espalda alta', 'Espalda baja', 'Codo o muñeca', 'Mano', 'Cadera', 'Rodilla', 'Tobillo o pie', 'Otra zona'];
+const PAIN_SINCE = ['Menos de 1 semana', '1 a 4 semanas', '1 a 3 meses', 'Más de 3 meses'];
+const PAIN_TYPES = ['Punzante', 'Quemante', 'Sordo o constante', 'Hormigueo', 'Calambre', 'Rigidez'];
+const PAIN_WORSE = ['Caminar', 'Subir gradas', 'Estar sentado', 'Agacharse', 'Dormir', 'Levantar peso'];
+const newPain = () => ({ zones: S.need && ZONES[S.need] ? [PAIN_ZONES.includes(ZONES[S.need][0]) ? ZONES[S.need][0] : 'Otra zona'] : [], since: null, type: [], worse: [], meds: '' });
+const memberOf = d => S.family.find(m => m.id === d.forWho) || S.family[0];
+const ageOf = m => m.age || +((m.rel.match(/(\d+)\s*años/) || [])[1] || 0);
+function painSection(d) {
+  const p = d.pain, who = d.forWho === 'me' ? 'tu' : 'el';
+  const chips = (list, key, sel, multi) => list.map(o => `<button class="chip sm" data-${key}="${esc(o)}" aria-pressed="${multi ? sel.includes(o) : sel === o}">${o}</button>`).join('');
+  return `<div class="card stack">
+    <span class="h-sec">${d.forWho === 'me' ? 'Cuéntanos de tu dolor' : `Cuéntanos del dolor de ${esc(memberOf(d).name.split(' ')[0])}`}</span>
+    <span class="tiny muted">Con esto ${who === 'tu' ? 'tu' : 'el'} fisio llega preparado y trae el equipo correcto.</span>
+    <div class="stack"><b class="small">¿Dónde duele?</b><div class="tags">${chips(PAIN_ZONES, 'pz', p.zones, true)}</div></div>
+    <div class="stack"><b class="small">¿Desde cuándo?</b><div class="tags">${chips(PAIN_SINCE, 'psince', p.since, false)}</div></div>
+    <div class="stack"><b class="small">¿Cómo es el dolor?</b><span class="tiny muted">Puedes elegir varios.</span><div class="tags">${chips(PAIN_TYPES, 'ptype', p.type, true)}</div></div>
+    <div class="stack"><b class="small">¿Qué lo empeora?</b><div class="tags">${chips(PAIN_WORSE, 'pworse', p.worse, true)}</div></div>
+    <div class="field"><div class="row"><label class="grow" for="b-eva">¿Qué tan fuerte es ahora?</label><b class="mono small" id="b-evaV">${d.eva}/10</b></div><input type="range" id="b-eva" min="0" max="10" value="${d.eva}"><div class="row tiny muted"><span class="grow">Sin dolor</span><span>El peor imaginable</span></div></div>
+    <div class="field"><label for="b-mot">Comentarios para el fisio</label><textarea class="input" id="b-mot" rows="4" placeholder="Ej: me duele la rodilla derecha al subir gradas desde que empecé a correr. En la mañana amanece rígida. Probé hielo y mejora un poco.">${esc(d.motivo)}</textarea><span class="hint">Escríbelo con tus palabras: cómo empezó, a qué hora duele más, qué has probado.</span></div>
+    <div class="field"><label for="b-meds">Cirugías, enfermedades o medicamentos (opcional)</label><input class="input" id="b-meds" value="${esc(p.meds)}" placeholder="Ej: hipertensión, operada de la rodilla en 2022"></div>
+  </div>`;
+}
+function painSummary(b) {
+  const p = b.pain; if (!p) return '';
+  const parts = [];
+  if (p.zones.length) parts.push(p.zones.join(', '));
+  if (p.type.length) parts.push(p.type.join(', ').toLowerCase());
+  if (p.since) parts.push(p.since.toLowerCase());
+  if (p.worse.length) parts.push('empeora al ' + p.worse.map(w => w.toLowerCase()).join(', '));
+  if (b.eva != null) parts.push(`intensidad ${b.eva}/10`);
+  return parts.join(' · ');
+}
+// Lo que ve el fisio: quién es el paciente, su dolor y los comentarios.
+function bookingInfo(r) {
+  const t = r.third;
+  return `${t ? `<div class="small"><span class="muted">Paciente: </span><b>${esc(shortName(r.forName))}</b> · ${esc(r.forRel)}<br><span class="muted">Reservó: </span>${esc(shortName(r.client.name))} · <span class="muted">Acompaña en casa: </span>${esc(t.companion === 'yo' ? shortName(r.client.name) : t.companion === 'otro' ? (t.companionName || 'otro familiar') : 'nadie')}${t.canSign ? '' : ' · <b>firma su representante</b>'}</div>` : ''}
+    ${r.pain && painSummary(r) ? `<div class="small"><span class="muted">Dolor: </span>${esc(painSummary(r))}</div>` : ''}
+    ${r.motivo ? `<div class="small"><span class="muted">Comentarios: </span>${esc(r.motivo)}</div>` : ''}
+    ${r.pain && r.pain.meds ? `<div class="small"><span class="muted">Antecedentes: </span>${esc(r.pain.meds)}</div>` : ''}`;
+}
+
+// ---------- Cita para otra persona (abuela, mamá, hijo) ----------
+function thirdSection(d) {
+  const m = memberOf(d), first = m.name.split(' ')[0], age = ageOf(m), t = d.third;
+  const needsCompanion = age >= 75 || !t.canSign;
+  return `<div class="card stack third">
+    <div class="row"><div class="avatar sm" style="background:#6B7FA3">${esc(initials(m.name))}</div><div class="grow"><b>${esc(m.name)}</b><div class="tiny muted">${esc(m.rel)}</div></div><span class="badge neutral">Recibe la sesión</span></div>
+    <div class="stack"><b class="small">¿${esc(first)} puede firmar el consentimiento?</b>
+      <div class="tags"><button class="chip sm" data-tsign="1" aria-pressed="${t.canSign}">Sí, firma ${esc(first)}</button><button class="chip sm" data-tsign="0" aria-pressed="${!t.canSign}">No, firmo yo como su representante</button></div></div>
+    <div class="stack"><b class="small">¿Quién estará en casa durante la sesión?</b>
+      <div class="tags">${[['yo', 'Yo estaré presente'], ['otro', 'Otro familiar o cuidador'], ['nadie', 'Nadie más']].map(([k, l]) => `<button class="chip sm" data-tcomp="${k}" aria-pressed="${t.companion === k}">${l}</button>`).join('')}</div>
+      ${t.companion === 'otro' ? `<input class="input" id="b-tcname" value="${esc(t.companionName || '')}" placeholder="Nombre de quien acompaña">` : ''}
+      ${t.companion === 'nadie' && needsCompanion ? `<div class="callout danger">${ic('alert')}<span>Para personas de 75 años o más, o que no pueden firmar, un adulto responsable debe estar presente toda la sesión. Así cuidamos a ${esc(first)} y al especialista.</span></div>` : ''}</div>
+    <div class="field"><label for="b-tphone">Teléfono de casa o de quien acompaña (opcional)</label><input class="input" id="b-tphone" inputmode="tel" value="${esc(t.phone)}" placeholder="Ej: 02 245 6789"></div>
+    <div class="callout">${ic('shield')}<span>Tú eres responsable de la reserva y del pago. Te llegan las notificaciones, el seguimiento y el PIN: compártelo con quien abra la puerta. La historia clínica queda a nombre de ${esc(first)}, y tú puedes verla como su familiar responsable.</span></div>
+  </div>`;
+}
+const bookOk = d => {
+  const m = memberOf(d), third = d.forWho !== 'me';
+  return d.time != null
+    && (d.motivo.trim().length > 4 || d.pain.zones.length > 0)
+    && (d.mode === 'video' || (d.address.trim().length > 4 && d.pinOk))
+    && !d.flags.length
+    && !(third && d.third.companion === 'nadie' && (ageOf(m) >= 75 || !d.third.canSign));
+};
+
+// ---------- Ayuda y garantías ----------
+const FAQ = [
+  ['Pagos y devoluciones', [
+    ['¿Qué pasa si mi fisio no llega?', 'Si no llega 20 minutos después de la hora acordada, toca «Mi fisio no llegó» en tu cita. Cancelamos sin costo, liberamos el 100% de lo que retuvimos y te damos $5 de crédito. Si quieres, te mostramos especialistas disponibles en ese momento.'],
+    ['¿Cuándo me devuelven el dinero?', 'Con tarjeta, el dinero solo estaba retenido: lo liberamos al instante, pero tu banco puede tardar de 1 a 7 días hábiles en mostrarlo en tu estado de cuenta. Con DeUna o transferencia, lo devolvemos a tu cuenta en máximo 48 horas hábiles. Te avisamos en cada paso.'],
+    ['¿Cuándo se me cobra?', 'Al reservar solo retenemos el valor. Se cobra cuando la sesión termina y el especialista cierra la cita.'],
+    ['¿Qué pasa si cancelo?', 'Gratis hasta 12 horas antes. Con menos de 12 horas se cobra el 50%, que va al especialista por el tiempo que te reservó. Si el especialista cancela, te devolvemos todo y te damos $5 de crédito.'],
+    ['¿Y si la sesión no fue lo que esperaba?', 'Repórtalo desde Citas dentro de 48 horas. Revisamos el caso con la nota clínica y, si el servicio no se dio como corresponde, te devolvemos todo o una parte.'],
+    ['Me cobraron dos veces, ¿qué hago?', 'Repórtalo en Citas › Reportar un problema. Devolvemos el cobro duplicado en máximo 48 horas hábiles.'],
+    ['¿Qué pasa con mi paquete si no lo uso?', 'Tienes 6 meses para usarlo. Pasado ese tiempo te devolvemos las sesiones que no usaste.'],
+  ]],
+  ['Citas para otra persona', [
+    ['¿Puedo reservar para mi abuela, mi mamá o mi hijo?', 'Sí. Agrégalos en Cuenta › Mi familia y, al reservar, elige para quién es la sesión. Tú quedas como responsable de la reserva y del pago.'],
+    ['¿Mi abuela necesita celular o cuenta?', 'No. Tú recibes las notificaciones, el seguimiento del especialista y el PIN. Compártele el PIN a quien abra la puerta.'],
+    ['¿Quién firma el consentimiento?', 'La persona que recibe la sesión, si puede decidir por sí misma. Si no puede, firma su representante o el familiar responsable que esté presente.'],
+    ['¿Tiene que haber alguien en casa?', 'Sí, cuando la persona tiene 75 años o más, es menor de edad o no puede firmar. Un adulto responsable debe estar presente toda la sesión.'],
+    ['¿Quién ve la historia clínica de mi familiar?', 'El especialista que la atiende, la persona atendida y tú como familiar responsable. Tu familiar puede pedir que dejes de verla cuando quiera.'],
+  ]],
+  ['Seguridad', [
+    ['¿Cómo sé que el especialista es quien dice ser?', 'Verificamos su cédula con el Registro Civil, su título en la SENESCYT y el MSP, y sus antecedentes penales. Además, se toma una selfie cada día antes de conectarse.'],
+    ['¿Qué hago si la persona en la puerta no es la del perfil?', 'No abras. Toca «No es» en la cita: cancelamos, suspendemos la cuenta del especialista y te llama el equipo de seguridad.'],
+    ['¿Para qué es el botón de emergencia?', 'Avisa al equipo de seguridad y a tu contacto de confianza con tu ubicación, y te muestra el número del ECU 911.'],
+  ]],
+  ['Historia clínica y datos', [
+    ['¿Quién ve mi historia clínica?', 'Solo tú y el especialista que te atiende. Cada vez que alguien la abre queda registrado.'],
+    ['¿Puedo descargar o borrar mis datos?', 'Sí, en Cuenta › Privacidad y seguridad. Las facturas y la historia clínica se guardan el tiempo que exige la ley.'],
+  ]],
+];
+function cAyuda() {
+  return `${topbar('Ayuda y garantías', 'perfil')}
+  <div class="pad">
+    <div class="card stack guarantee">
+      <span class="eyebrow">Garantía FisioCerca</span>
+      ${[['wallet', 'Pagas solo cuando termina la sesión', 'Al reservar solo retenemos el valor.'], ['x', 'Si tu fisio no llega, te devolvemos el 100%', 'Y te damos $5 de crédito para tu próxima sesión.'], ['shield', 'Especialistas verificados como en un banco', 'Cédula, título, registro MSP y antecedentes penales.']].map(([i, t, d]) => `<div class="row" style="align-items:flex-start"><div class="check-ico ok" style="background:var(--brand-soft);color:var(--brand)">${ic(i)}</div><div class="grow"><b class="small">${t}</b><div class="tiny muted">${d}</div></div></div>`).join('')}
+    </div>
+    ${FAQ.map(([g, qs]) => `<div class="stack"><span class="h-sec">${g}</span><div class="card" style="padding:4px 14px">${qs.map(([q, a]) => `<details class="faq"><summary>${q}</summary><p class="small">${a}</p></details>`).join('')}</div></div>`).join('')}
+    <div class="callout">${ic('chat')}<span>¿No encuentras tu respuesta? Soporte por chat las 24 horas, respondemos en menos de 5 minutos.</span></div>
+    <div class="row"><button class="btn line" style="flex:1" data-go="citas">Reportar un problema</button><button class="btn" style="flex:1" data-act="supportChat">Hablar con soporte</button></div>
+  </div>`;
+}
+
+// ---------- «Mi fisio no llegó» ----------
+const charged = b => b.pay === 'pack' ? 0 : b.price + FEE - (b.creditUsed || 0);
+function noShowModal() {
+  const b = activeBooking(), f = fisioById(b.fisioId), amt = charged(b);
+  modal(`<div class="row"><div class="check-ico warn" style="width:44px;height:44px">${ic('clock', 'style="width:22px;height:22px"')}</div><h2 class="grow" style="font-size:20px">¿${esc(f.name.split(' ')[0])} no llegó?</h2></div>
+    <p class="small" style="margin:0">Si ya pasaron 20 minutos de la hora acordada, cancelamos sin costo y:</p>
+    <div class="card money"><span>${b.pay === 'pack' ? 'Te devolvemos la sesión a tu paquete' : 'Liberamos lo retenido en tu tarjeta'}</span><b>${b.pay === 'pack' ? '1 sesión' : money(amt)}</b><span>Crédito para tu próxima sesión</span><b>$5.00</b></div>
+    <span class="tiny muted">${b.pay === 'pack' ? 'La sesión vuelve a tu paquete al instante.' : 'Lo liberamos al instante. Tu banco puede tardar de 1 a 7 días hábiles en mostrarlo.'}</span>
+    <button class="btn" data-act="noShowConfirm">Cancelar y recibir mi devolución</button>
+    <div class="row"><button class="btn line" style="flex:1" data-act="call">Llamar a ${esc(f.name.split(' ')[0])}</button><button class="btn line" style="flex:1" data-act="closeModal">Esperar un poco más</button></div>`);
+}
+
 // ---------- Fisio ----------
 const myId = 'f1';
 function fisioRequests() {
@@ -1647,7 +1778,7 @@ function reqCard(r) {
     <div class="row"><div class="avatar" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="grow"><b>${esc(shortName(r.client.name))}</b><div class="small">${r.client.verified ? `<span class="badge">${ic('shield')}Identidad verificada</span>` : '<span class="badge warn">Sin verificar</span>'}</div></div><div style="text-align:right">${starsTxt(r.client.rating)}<div class="tiny muted">${r.client.sessions} sesiones</div></div></div>
     <div class="kv small"><span class="muted">Cuándo</span><b>${esc(r.date)}, ${esc(r.time)}</b></div>
     <div class="kv small"><span class="muted">${isVideo(r) ? 'Modalidad' : 'Zona'}</span><b>${isVideo(r) ? 'Videollamada · 30 min' : `${esc(r.barrio)} · ${r.dist.toFixed(1)} km`}</b></div>
-    <div class="small"><span class="muted">Motivo: </span>${esc(r.motivo)}</div>
+    ${bookingInfo(r)}
     <div class="kv small"><span class="muted">Recibes</span><b class="mono">${money(l.neto)}</b></div>
     ${isVideo(r) ? '' : '<span class="tiny muted">La dirección exacta se muestra al aceptar.</span>'}
     <div class="row"><button class="btn line small" style="flex:1" data-reject="${r.id}">Rechazar</button><button class="btn small" style="flex:2" data-accept="${r.id}">Aceptar</button></div>
@@ -1675,10 +1806,10 @@ function fBooking(id) {
     <button class="btn line" data-act="longSession">Simular: la sesión pasó de 90 min</button>`;
   if (isVideo(real) && r.status === 'confirmada') body = `<button class="btn" data-act="fVideoStart" data-id="${id}" ${real.consentSigned ? '' : 'disabled'}>${ic('video')}Iniciar videollamada</button><span class="hint" style="text-align:center">${real.consentSigned ? 'El paciente ya firmó el consentimiento.' : 'Se activa cuando el paciente firme el consentimiento.'}</span>`;
   if (isVideo(real) && r.status === 'en_curso') body = `${callView(shortName(r.client.name), r.client.initials, r.client.hue)}<button class="btn" data-act="fFinish" data-id="${id}">Terminar y escribir la nota</button>`;
-  return `${topbar('Cita con ' + r.client.name.split(' ')[0], 'inicio')}
+  return `${topbar(r.third ? 'Cita de ' + r.forName.split(' ')[0] : 'Cita con ' + r.client.name.split(' ')[0], 'inicio')}
   <div class="pad">
     <div class="row"><div class="avatar" style="background:${r.client.hue}">${esc(r.client.initials)}</div><div class="grow"><b>${esc(shortName(r.client.name))}</b><div class="small muted">${starsTxt(r.client.rating)} · ${r.client.verified ? 'Verificado' : 'Sin verificar'}</div></div><button class="iconbtn" data-act="openChat" aria-label="Chat">${ic('chat')}</button><button class="iconbtn" data-act="call" aria-label="Llamar">${ic('phone')}</button></div>
-    <div class="card stack"><div class="kv small"><span class="muted">Cuándo</span><b>${esc(r.date)}, ${esc(r.time)}</b></div><div class="kv small"><span class="muted">Dirección</span><b style="text-align:right">${esc(r.address)}</b></div>${r.ref ? `<div class="kv small"><span class="muted">Referencia</span><b style="text-align:right">${esc(r.ref)}</b></div>` : ''}<div class="small"><span class="muted">Motivo: </span>${esc(r.motivo)}</div></div>
+    <div class="card stack"><div class="kv small"><span class="muted">Cuándo</span><b>${esc(r.date)}, ${esc(r.time)}</b></div><div class="kv small"><span class="muted">Dirección</span><b style="text-align:right">${esc(r.address)}</b></div>${r.ref ? `<div class="kv small"><span class="muted">Referencia</span><b style="text-align:right">${esc(r.ref)}</b></div>` : ''}${bookingInfo(r)}</div>
     ${body}
     <button class="sos" data-act="sos">${ic('alert')}<span><span style="display:block">Botón de emergencia</span><span class="tiny" style="font-weight:500">Comparte tu ubicación con seguridad y muestra el ECU 911</span></span></button>
   </div>`;
@@ -1807,7 +1938,7 @@ const TABS = {
   fisio: [['inicio', 'home', 'Inicio'], ['agenda', 'cal', 'Agenda'], ['pacientes', 'users', 'Pacientes'], ['ganancias', 'wallet', 'Ganancias'], ['perfil', 'user', 'Perfil']],
   admin: [['cola', 'shield', 'Verificación'], ['negocio', 'wallet', 'Negocio'], ['plan', 'doc', 'Plan']],
 };
-const TAB_OF = { profile: 'home', book: 'home', activa: 'home', fbook: 'inicio', fnote: 'inicio', paciente: 'pacientes', preview: 'perfil' };
+const TAB_OF = { profile: 'home', book: 'home', activa: 'home', fbook: 'inicio', fnote: 'inicio', ayuda: 'perfil', paciente: 'pacientes', preview: 'perfil' };
 let timerInt;
 function kycRole() {
   if (!S.kyc || S.kyc.who !== S.role) S.kyc = newKyc(S.role);
@@ -1817,7 +1948,7 @@ function render(scrollTop) {
   document.querySelectorAll('[data-role]').forEach(b => b.setAttribute('aria-pressed', b.dataset.role === S.role));
   const v = view();
   let html = '';
-  if (S.role === 'cliente') html = ({ welcome: cWelcome, kyc: kycRole, home: cHome, trat: cTrat, citas: cCitas, perfil: cPerfil, activa: cActiva, book: cBook })[v.name]?.() ?? (v.name === 'profile' ? cProfile(v.id) : cHome());
+  if (S.role === 'cliente') html = ({ welcome: cWelcome, kyc: kycRole, home: cHome, trat: cTrat, ayuda: cAyuda, citas: cCitas, perfil: cPerfil, activa: cActiva, book: cBook })[v.name]?.() ?? (v.name === 'profile' ? cProfile(v.id) : cHome());
   if (S.role === 'fisio') html = ({ inicio: fInicio, agenda: fAgenda, pacientes: fPacientes, ganancias: fGanancias, perfil: fPerfil, kyc: kycRole })[v.name]?.() ?? (v.name === 'fbook' ? fBooking(v.id) : v.name === 'fnote' ? fNote(v.id) : v.name === 'paciente' ? fPatient(v.id) : v.name === 'preview' ? cProfile(myId, true).replace('data-go="home"', 'data-go="perfil"') : fInicio());
   if (S.role === 'admin') html = v.name === 'negocio' ? aNegocio() : v.name === 'plan' ? aPlan() : aCola();
   $screen.innerHTML = html;
@@ -1842,7 +1973,8 @@ function render(scrollTop) {
 // ---------- Actions ----------
 function newBooking() {
   const d = S.draft, f = fisioById(d.fisioId), ds = days()[d.day];
-  return { id: 'b' + Date.now(), fisioId: f.id, mode: d.mode || 'casa', date: ds.full, time: SLOTS[d.time], address: d.mode === 'video' ? 'Videollamada' : d.address, ref: d.mode === 'video' ? '' : d.ref, motivo: d.motivo, pay: d.pay, price: d.mode === 'video' ? VIDEO_PRICE : f.price, forWho: d.forWho, eva: d.eva, order: d.order, status: 'pendiente', consentSigned: S.bookings.some(x => x.fisioId === f.id && x.consentSigned), pin: String(1000 + Math.floor(Math.random() * 9000)) };
+  const m = memberOf(d), base = d.mode === 'video' ? VIDEO_PRICE : f.price, creditUsed = d.pay === 'pack' ? 0 : Math.min(S.credit, base + FEE);
+  return { id: 'b' + Date.now(), pain: { ...d.pain }, creditUsed, forName: m.name, forRel: m.rel, third: d.forWho !== 'me' ? { ...d.third } : null, fisioId: f.id, mode: d.mode || 'casa', date: ds.full, time: SLOTS[d.time], address: d.mode === 'video' ? 'Videollamada' : d.address, ref: d.mode === 'video' ? '' : d.ref, motivo: d.motivo, pay: d.pay, price: d.mode === 'video' ? VIDEO_PRICE : f.price, forWho: d.forWho, eva: d.eva, order: d.order, status: 'pendiente', consentSigned: S.bookings.some(x => x.fisioId === f.id && x.consentSigned), pin: String(1000 + Math.floor(Math.random() * 9000)) };
 }
 function setStatus(b, st) {
   b.status = st;
@@ -1917,7 +2049,7 @@ const ACTIONS = {
     setTimeout(() => { S.fisio.rtid = new Date().toDateString(); S.fisio.available = true; SEED_FISIOS[0].available = true; save(); closeModal(); render(); toast('Eres tú. Ya estás disponible.'); }, 1300);
   },
   shareProfile() { toast('Enlace del perfil copiado (demo).'); },
-  confirmBook() { if (S.draft.pay === 'pack') S.treatment.pack--; const b = newBooking(); S.bookings.push(b); if (b.fisioId === myId) notify('fisio', `Nueva solicitud de ${shortName(S.user.name)}: ${b.date}, ${b.time}${isVideo(b) ? ' (videollamada)' : ''}.`); S.draft = null; S.rating = null; go('activa'); toast('Solicitud enviada. Pago retenido, no cobrado.'); },
+  confirmBook() { if (S.draft.pay === 'pack') S.treatment.pack--; const b = newBooking(); S.credit -= b.creditUsed; S.bookings.push(b); if (b.fisioId === myId) notify('fisio', `Nueva solicitud de ${shortName(S.user.name)}: ${b.date}, ${b.time}${isVideo(b) ? ' (videollamada)' : ''}.`); S.draft = null; S.rating = null; go('activa'); toast('Solicitud enviada. Pago retenido, no cobrado.'); },
   simAccept() { setStatus(activeBooking(), 'confirmada'); render(); toast('¡Confirmada! Guarda tu PIN.'); },
   cancelBook() { setStatus(activeBooking(), 'cancelada'); go('home'); toast('Solicitud cancelada. Liberamos el pago retenido.'); },
   simDepart() { setStatus(activeBooking(), 'en_camino'); render(); },
@@ -1972,7 +2104,7 @@ const ACTIONS = {
   buyPack(el) { const n = +el.dataset.n, f = fisioById(S.treatment.fisioId); S.treatment.pack = n; save(); closeModal(); render(); toast(`Paquete de ${n} sesiones con ${f.name.split(' ')[0]} activado.`); },
   addFamily() {
     const name = document.getElementById('fam-name').value.trim(), rel = document.getElementById('fam-rel').value.trim();
-    if (!name) return; S.family.push({ id: 'm' + Date.now(), name, rel: rel || 'Familiar' }); save(); closeModal(); render(); toast(`${name.split(' ')[0]} agregado a tu familia.`);
+    if (!name) return; S.family.push({ id: 'm' + Date.now(), name, rel: rel || 'Familiar', age: +((rel.match(/(\d+)/) || [])[1] || 0) }); save(); closeModal(); render(); toast(`${name.split(' ')[0]} agregado a tu familia.`);
   },
   familyModal() { modal(`<h2 style="font-size:20px">Agregar a un familiar</h2><p class="small muted" style="margin:0">Podrás reservar sesiones para esta persona. Si es menor de edad, nunca le pedimos datos biométricos: la cuenta la verificas tú.</p>
     <div class="field"><label for="fam-name">Nombre completo</label><input class="input" id="fam-name" placeholder="Ej: Rosa Paredes"></div>
@@ -1992,7 +2124,20 @@ const ACTIONS = {
   toggleMic(el) { el.classList.toggle('off'); },
   toggleCam(el) { el.classList.toggle('off'); },
   openNotifs() { notifModal(); },
-  helpModal() { helpModal(); },
+  helpModal() { go('ayuda'); },
+  supportChat() { toast('Te conectamos con soporte. Respuesta en menos de 5 minutos (demo).'); },
+  noShow() { noShowModal(); },
+  noShowConfirm() {
+    const b = activeBooking(), f = fisioById(b.fisioId), amt = charged(b);
+    setStatus(b, 'cancelada'); b.refunded = true;
+    if (b.pay === 'pack') S.treatment.pack++;
+    S.credit += 5;
+    S.tickets.unshift({ id: 1041 + S.tickets.length, bookingId: b.id, reason: 'nollego', reasonLabel: 'El especialista no llegó', text: 'Reportado desde la cita.', who: S.user.name, fisio: f.name, at: new Date().toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }), status: 'resuelto', priority: 'normal', amount: amt, resolution: `Devolución automática ${b.pay === 'pack' ? 'de 1 sesión al paquete' : 'de ' + money(amt)} y $5 de crédito.` });
+    notify('cliente', `${b.pay === 'pack' ? 'Devolvimos la sesión a tu paquete' : `Liberamos ${money(amt)} en tu tarjeta`} y sumamos $5 de crédito.`);
+    if (b.fisioId === myId) notify('fisio', `${shortName(S.user.name)} reportó que no llegaste a la cita del ${b.date}. Afecta tu índice de cumplimiento.`);
+    closeModal(); S.mode = 'ahora'; go('home');
+    toast(`Cita cancelada. ${b.pay === 'pack' ? 'Tu sesión volvió al paquete' : `Liberamos ${money(amt)}`} y te dimos $5 de crédito.`);
+  },
   sendReport() {
     const r = S.reportDraft, b = S.bookings.find(x => x.id === r.id), f = fisioById(b.fisioId), id = 1041 + S.tickets.length;
     const label = REPORT_REASONS.find(x => x[0] === r.reason)[1];
@@ -2018,7 +2163,7 @@ const ACTIONS = {
 };
 function sampleSelfie() {
   const c = document.createElement('canvas'); c.width = c.height = 200; const x = c.getContext('2d');
-  const g = x.createLinearGradient(0, 0, 0, 200); g.addColorStop(0, '#B9D3C8'); g.addColorStop(1, '#7FA898'); x.fillStyle = g; x.fillRect(0, 0, 200, 200);
+  const g = x.createLinearGradient(0, 0, 0, 200); g.addColorStop(0, '#C4D8EC'); g.addColorStop(1, '#89A8C8'); x.fillStyle = g; x.fillRect(0, 0, 200, 200);
   x.fillStyle = '#3B2A22'; x.beginPath(); x.ellipse(100, 88, 50, 56, 0, 0, Math.PI * 2); x.fill();
   x.fillStyle = '#C99572'; x.beginPath(); x.ellipse(100, 98, 38, 46, 0, 0, Math.PI * 2); x.fill();
   x.beginPath(); x.ellipse(100, 205, 70, 55, 0, 0, Math.PI * 2); x.fillStyle = '#2F5D7A'; x.fill();
@@ -2046,7 +2191,7 @@ function handle(el) {
     const bid = d.book || d.bookvideo;
     if (activeBooking()) { toast('Ya tienes una cita activa. Termínala o cancélala primero.'); return; }
     if (S.user.kycStatus !== 'ok') { verifyGateModal(); return; }
-    S.draft = { fisioId: bid, mode: d.bookvideo ? 'video' : 'casa', day: 1, time: null, address: ME.label + ', edificio Torre Carolina, piso 4', ref: '', motivo: '', pay: S.treatment.pack > 0 && bid === S.treatment.fisioId && !d.bookvideo ? 'pack' : 'card', pin: { x: 104, y: 46 }, pinOk: false, forWho: 'me', flags: [], eva: 5, order: '' }; go('book'); return;
+    S.draft = { fisioId: bid, mode: d.bookvideo ? 'video' : 'casa', day: 1, time: null, address: ME.label + ', edificio Torre Carolina, piso 4', ref: '', motivo: '', pay: S.treatment.pack > 0 && bid === S.treatment.fisioId && !d.bookvideo ? 'pack' : 'card', pin: { x: 104, y: 46 }, pinOk: false, forWho: 'me', flags: [], eva: 5, order: '', pain: newPain(), third: { canSign: true, companion: 'yo', companionName: '', phone: '' } }; go('book'); return;
   }
   if (d.day != null && S.draft) { S.draft.day = +d.day; S.draft.time = null; save(); render(); return; }
   if (d.slot != null && S.draft) { S.draft.time = +d.slot; save(); render(); return; }
@@ -2064,6 +2209,10 @@ function handle(el) {
   if (d.patient) { go('paciente', { id: d.patient }); return; }
   if (d.sday != null) { S.fisio.sched.days[+d.sday] = S.fisio.sched.days[+d.sday] ? 0 : 1; save(); render(); return; }
   if (d.fpref) { S.fisio.sched[d.fpref] = !S.fisio.sched[d.fpref]; applySched(); save(); render(); return; }
+  if (S.draft && (d.pz || d.ptype || d.pworse)) { const key = d.pz ? 'zones' : d.ptype ? 'type' : 'worse', v = d.pz || d.ptype || d.pworse, arr = S.draft.pain[key]; S.draft.pain[key] = arr.includes(v) ? arr.filter(x => x !== v) : arr.concat(v); save(); render(); return; }
+  if (S.draft && d.psince) { S.draft.pain.since = S.draft.pain.since === d.psince ? null : d.psince; save(); render(); return; }
+  if (S.draft && d.tsign != null) { S.draft.third.canSign = d.tsign === '1'; save(); render(); return; }
+  if (S.draft && d.tcomp) { S.draft.third.companion = d.tcomp; save(); render(); return; }
   if (d.forwho && S.draft) { S.draft.forWho = d.forwho; save(); render(); return; }
   if (d.ex) { const t = S.treatment; t.doneToday = t.doneToday.includes(d.ex) ? t.doneToday.filter(x => x !== d.ex) : t.doneToday.concat(d.ex); save(); render(); return; }
   if (d.exinfo) { exModal(d.exinfo); return; }
@@ -2121,12 +2270,15 @@ document.addEventListener('input', e => {
   }
   if (t.id.startsWith('biz-')) bizInput(t);
   if (t.id === 's-radius') { S.fisio.sched.radius = +t.value; applySched(); save(); document.getElementById('s-radiusV').textContent = t.value + ' km'; }
+  if (S.draft && t.id === 'b-meds') { S.draft.pain.meds = t.value; save(); }
+  if (S.draft && t.id === 'b-tphone') { S.draft.third.phone = t.value; save(); }
+  if (S.draft && t.id === 'b-tcname') { S.draft.third.companionName = t.value; save(); }
   if (t.id === 'b-eva') { S.draft.eva = +t.value; save(); document.getElementById('b-evaV').textContent = t.value + '/10'; }
   if (S.noteDraft && /^n-[soap]$/.test(t.id)) { S.noteDraft[t.id[2]] = t.value; save(); document.getElementById('saveNoteBtn').disabled = !(S.noteDraft.a.trim() && S.noteDraft.p.trim()); }
   if (S.noteDraft && (t.id === 'n-before' || t.id === 'n-after')) { S.noteDraft[t.id.slice(2)] = +t.value; save(); document.getElementById(t.id + 'V').textContent = t.value + '/10'; }
   if (S.draft && ['b-addr', 'b-ref', 'b-mot'].includes(t.id)) {
     S.draft[{ 'b-addr': 'address', 'b-ref': 'ref', 'b-mot': 'motivo' }[t.id]] = t.value; save();
-    const ok = S.draft.time != null && S.draft.motivo.trim().length > 4 && (S.draft.mode === 'video' || (S.draft.address.trim().length > 4 && S.draft.pinOk)) && !S.draft.flags.length;
+    const ok = bookOk(S.draft);
     const btn = document.querySelector('[data-act="confirmBook"]'); if (btn) btn.disabled = !ok;
   }
   if (/^(otp|pin)\d$/.test(t.id)) { t.value = t.value.replace(/\D/g, '').slice(-1); if (t.value) document.getElementById(t.id.slice(0, -1) + (+t.id.slice(-1) + 1))?.focus(); }
