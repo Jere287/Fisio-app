@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
+import * as S from '../schemas.js';
 import { audit, notify, notifyAdmins } from '../context.js';
 import { many, one, withTx, type Queryable, type Tx } from '../db/pool.js';
 import { randomDigits, safeEqual, sha256 } from '../lib/crypto.js';
@@ -68,6 +69,8 @@ const asPhysio = (b: BookingRow, userId: string) => { if (b.physio_id !== userId
 
 // Lo que ve cada parte. El paciente ve su PIN; el fisio ve la dirección solo después de aceptar.
 async function view(ctx: AppContext, q: Queryable, b: BookingRow, viewer: 'patient' | 'physio') {
+  const viewerId = viewer === 'patient' ? b.booked_by : b.physio_id;
+  const reviewed = b.status === 'completed' && !!(await one(q, 'SELECT 1 FROM reviews WHERE booking_id = $1 AND author_id = $2', [b.id, viewerId]));
   const patient = await one<{ full_name: string; relationship: string; birth_year: number | null; can_consent: boolean }>(q, 'SELECT full_name, relationship, birth_year, can_consent FROM patients WHERE id = $1', [b.patient_id]);
   const physio = await one<{ full_name: string }>(q, 'SELECT full_name FROM users WHERE id = $1', [b.physio_id]);
   const booker = await one<{ full_name: string; kyc_status: string }>(q, 'SELECT full_name, kyc_status FROM users WHERE id = $1', [b.booked_by]);
@@ -77,7 +80,7 @@ async function view(ctx: AppContext, q: Queryable, b: BookingRow, viewer: 'patie
     id: b.id, mode: b.mode, status: b.status, scheduledAt: b.scheduled_at, durationMin: b.duration_min,
     pain: b.pain, painScore: b.pain_score, comments: ctx.cipher.decryptOpt(b.comments_enc),
     priceCents: b.price_cents, feeCents: b.fee_cents, creditCents: b.credit_cents, totalCents: b.total_cents, usesPackage: !!b.package_id,
-    consentSigned: !!consent, doorConfirmed: !!b.door_confirmed_at,
+    consentSigned: !!consent, doorConfirmed: !!b.door_confirmed_at, reviewed,
     patient: { name: viewer === 'physio' ? short(patient?.full_name) : patient?.full_name, relationship: patient?.relationship, age: patient?.birth_year ? ctx.now().getUTCFullYear() - patient.birth_year : null, canConsent: patient?.can_consent },
     companion: b.companion, companionName: b.companion_name,
   };
@@ -111,6 +114,7 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
         companionName: z.string().max(120).optional(),
         usePackage: z.boolean().default(false),
       }),
+      response: { 201: S.Booking },
     },
     preHandler: [auth, requireVerified(), idem.preHandler],
     onSend: idem.onSend,
@@ -171,7 +175,7 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   r.get('/v1/bookings', {
-    schema: { tags: ['bookings'], summary: 'Mis citas (paginado por fecha)', querystring: z.object({ as: z.enum(['patient', 'physio']).default('patient'), limit: z.coerce.number().int().min(1).max(100).default(30), before: z.string().datetime().optional() }) },
+    schema: { tags: ['bookings'], summary: 'Mis citas (paginado por fecha)', querystring: z.object({ as: z.enum(['patient', 'physio']).default('patient'), limit: z.coerce.number().int().min(1).max(100).default(30), before: z.string().datetime().optional() }), response: { 200: z.array(S.Booking) } },
     preHandler: auth,
   }, async (req) => {
     const col = req.query.as === 'physio' ? 'physio_id' : 'booked_by';
@@ -180,7 +184,7 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
     return Promise.all(rows.map(b => view(ctx, ctx.db, b, req.query.as)));
   });
 
-  r.get('/v1/bookings/:id', { schema: { tags: ['bookings'], params: idParam }, preHandler: auth }, async (req) => {
+  r.get('/v1/bookings/:id', { schema: { tags: ['bookings'], params: idParam, response: { 200: S.Booking } }, preHandler: auth }, async (req) => {
     const b = await one<BookingRow>(ctx.db, 'SELECT * FROM bookings WHERE id = $1', [req.params.id]);
     if (!b) throw notFound('Cita');
     return view(ctx, ctx.db, b, role(b, req.auth.id));
@@ -284,12 +288,24 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
   patientAction('consent', 'Firmar el consentimiento informado', async (tx, b, req) => {
     const p = await one<{ full_name: string; can_consent: boolean }>(tx, 'SELECT full_name, can_consent FROM patients WHERE id = $1', [b.patient_id]);
     if (req.body.signerIsPatient && !p!.can_consent) throw unprocessable('representative_required', 'Esta persona no puede firmar por sí misma. Debe firmar su representante.');
-    const png = Buffer.from(req.body.signaturePngBase64, 'base64');
-    if (png.length < 100 || png.subarray(1, 4).toString() !== 'PNG') throw unprocessable('invalid_signature', 'La firma debe ser una imagen PNG.');
+    // La firma llega como PNG (base64) o como trazo vectorial SVG. Se guarda solo su huella SHA-256.
+    let signature: Buffer;
+    if (req.body.signatureSvg) {
+      const svg: string = req.body.signatureSvg;
+      if (!/^<svg[\s>]/.test(svg) || /<script|on\w+=|javascript:/i.test(svg) || !/<path\b/.test(svg)) throw unprocessable('invalid_signature', 'La firma no es válida. Vuelve a firmar.');
+      signature = Buffer.from(svg, 'utf8');
+    } else {
+      signature = Buffer.from(req.body.signaturePngBase64 ?? '', 'base64');
+      if (signature.length < 100 || signature.subarray(1, 4).toString() !== 'PNG') throw unprocessable('invalid_signature', 'La firma debe ser una imagen PNG.');
+    }
     await tx.query(`INSERT INTO clinical_consents (patient_id, physio_id, signer_name, signer_is_patient, signature_sha256) VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT (patient_id, physio_id) DO NOTHING`, [b.patient_id, b.physio_id, req.body.signerName, req.body.signerIsPatient, sha256(png)]);
+      ON CONFLICT (patient_id, physio_id) DO NOTHING`, [b.patient_id, b.physio_id, req.body.signerName, req.body.signerIsPatient, sha256(signature)]);
     await tx.query(`INSERT INTO booking_events (booking_id, actor_id, type) VALUES ($1, $2, 'consent_signed')`, [b.id, req.auth.id]);
-  }, z.object({ signerName: z.string().min(3).max(120), signerIsPatient: z.boolean(), signaturePngBase64: z.string().min(100).max(1_400_000) }));
+  }, z.object({
+    signerName: z.string().min(3).max(120), signerIsPatient: z.boolean(),
+    signaturePngBase64: z.string().min(100).max(1_400_000).optional(),
+    signatureSvg: z.string().min(30).max(200_000).optional(),
+  }).refine(v => !!v.signaturePngBase64 !== !!v.signatureSvg, 'Envía la firma en un solo formato: PNG o SVG.'));
 
   // ¿La persona en la puerta es la del perfil? Si no, se cancela, se suspende al fisio y se alerta a seguridad.
   patientAction('door', 'Confirmar identidad del fisio en la puerta', async (tx, b, req) => {

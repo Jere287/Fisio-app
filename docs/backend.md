@@ -56,6 +56,7 @@ pending ─► confirmed ─► en_route ─► arrived ─► in_progress ─�
 | Familiar | Si el paciente tiene 75 años o más, es menor o no puede firmar, exige un acompañante. Si no puede firmar, el consentimiento lo firma su representante. |
 | Dirección | El fisio la ve solo después de aceptar. Nunca ve el PIN. |
 | «Llegué» | Solo a menos de **150 m** del punto que marcó el paciente. |
+| Consentimiento | Se firma una vez por paciente y especialista, con el dedo en la app. La firma llega como SVG (trazo vectorial, se rechaza si trae scripts o atributos de eventos) o como PNG. |
 | Iniciar | En visitas a domicilio exige consentimiento firmado, que el paciente confirme el rostro en la puerta y el **PIN** correcto (máximo 5 intentos). |
 | Puerta | Si el paciente dice que la persona no es la del perfil: se cancela la cita, se libera el pago, se **suspende al fisio**, se crea una alerta y un caso de seguridad. |
 | Terminar | Nota SOAP cifrada, ejercicios para casa, **cobro** y reparto contable. |
@@ -88,7 +89,16 @@ pending ─► confirmed ─► en_route ─► arrived ─► in_progress ─�
 | LOPDP | Consentimientos por versión, exportación de datos, eliminación (anonimiza la cuenta y conserva la historia clínica y las facturas por obligación legal) y auditoría de acciones de administración. |
 | Dependencias | `npm audit` en CI. Hoy: 0 vulnerabilidades en producción. |
 
-## 5. Mapa de la API
+## 5. Fiabilidad y contrato
+
+| Tema | Cómo se resuelve |
+|---|---|
+| Doble toque o mala señal | `POST /v1/bookings` acepta la cabecera `Idempotency-Key`. Si llega dos veces la misma clave, se devuelve la misma respuesta (con `idempotent-replayed: true`) sin reservar ni retener dos veces. La misma clave con otro contenido responde 422. |
+| Trazabilidad | Cada respuesta lleva `x-request-id` (se respeta el que envíe el cliente). Los errores 500 lo incluyen para que soporte encuentre el caso en los logs. |
+| Contrato de respuestas | Cada ruta declara su esquema de salida con Zod (`src/schemas.ts`). Un campo que no esté declarado **no sale**, aunque la consulta lo traiga. De ese contrato se genera `openapi.json`, y de él los tipos de la app móvil. El CI falla si `openapi.json` no está al día. |
+| Tareas programadas | `src/jobs.ts`, cada minuto, con un candado de PostgreSQL para que solo corra una instancia: vence solicitudes sin respuesta a los 30 minutos (y libera el pago), recordatorios de 24 h y 1 h, aviso si una sesión pasa de 90 minutos y desconexión del fisio con documentos vencidos. Se activan con `JOBS_ENABLED=true`. |
+
+## 6. Mapa de la API
 
 La documentación interactiva completa está en `/docs` (OpenAPI 3). Resumen:
 
@@ -105,7 +115,7 @@ La documentación interactiva completa está en `/docs` (OpenAPI 3). Resumen:
 | Soporte | `POST/GET /v1/support/tickets` |
 | Admin | `/v1/admin/physios`, `/documents/:id/decision`, `/physios/:id/decision`, `/kyc/:id/decision`, `/tickets`, `/tickets/:id/resolve`, `/alerts`, `/metrics`, `/payouts/run` |
 
-## 6. Qué falta para producción
+## 7. Qué falta para producción
 
 Esto es lo que no se puede terminar sin contratos o credenciales de terceros. Cada pieza tiene su interfaz lista.
 
@@ -116,11 +126,11 @@ Esto es lo que no se puede terminar sin contratos o credenciales de terceros. Ca
 5. **Notificaciones push** (Firebase): el punto de conexión está en `notify()`, en `src/context.ts`.
 6. **Ubicación en tiempo real**: hoy `POST /bookings/:id/location` funciona por consulta periódica. Para el mapa en vivo, conviene sumar WebSockets o Server-Sent Events.
 7. **Videollamada**: integrar un proveedor (Daily, Twilio Video o Agora) que entregue la sala al iniciar la cita.
-8. **Tareas programadas**: expirar solicitudes no respondidas en 30 minutos, recordatorios de 24 h y 1 h, aviso de sesión de más de 90 minutos y vencimiento de antecedentes penales (6 meses).
+8. **Recordatorios por push**: las tareas programadas ya crean las notificaciones; falta enviarlas por Firebase (ver punto 5).
 9. **Infraestructura**: PostgreSQL administrado con respaldos diarios y réplica (AWS RDS, Google Cloud SQL o Supabase), secretos en un gestor de secretos, monitoreo de errores (Sentry) y logs centralizados.
-10. **Apps móviles**: React Native (Expo) consumiendo esta API. El prototipo HTML sirve como especificación visual de cada pantalla.
+10. **Apps móviles**: la app está en `mobile/` (ver su README). Falta compilarla con EAS, publicarla en las tiendas y conectar el SDK del proveedor de identidad y la subida de fotos.
 
-## 7. Cómo desplegar
+## 8. Cómo desplegar
 
 1. Crear la base de datos PostgreSQL 16 administrada. Las extensiones `pgcrypto`, `cube`, `earthdistance` y `btree_gist` vienen incluidas en RDS, Cloud SQL y Supabase.
 2. Construir la imagen con `docker build -t fisiocerca-api backend/` y desplegarla en Cloud Run, AWS App Runner, Railway o Render.

@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
+import * as S from '../schemas.js';
 import { audit } from '../context.js';
 import { many, one, withTx, type Queryable } from '../db/pool.js';
 import { hmac, randomDigits, randomToken, safeEqual } from '../lib/crypto.js';
@@ -27,7 +28,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // 1. Pedir un código por SMS.
   r.post('/v1/auth/otp', {
-    schema: { tags: ['auth'], summary: 'Enviar código de acceso por SMS', body: z.object({ phone: phoneSchema }) },
+    schema: { tags: ['auth'], summary: 'Enviar código de acceso por SMS', body: z.object({ phone: phoneSchema }), response: { 200: z.object({ sent: z.boolean(), expiresInSec: z.number() }) } },
     config: { rateLimit: { max: 10, timeWindow: '10 minutes' } },
   }, async (req) => {
     const { phone } = req.body;
@@ -42,7 +43,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // 2. Verificar el código: crea la cuenta si no existe y entrega los tokens.
   r.post('/v1/auth/verify', {
-    schema: { tags: ['auth'], summary: 'Verificar código y obtener tokens', body: z.object({ phone: phoneSchema, code: z.string().regex(/^\d{6}$/) }) },
+    schema: { tags: ['auth'], summary: 'Verificar código y obtener tokens', body: z.object({ phone: phoneSchema, code: z.string().regex(/^\d{6}$/) }), response: { 200: S.Session } },
     config: { rateLimit: { max: 20, timeWindow: '10 minutes' } },
   }, async (req) => {
     const { phone, code } = req.body;
@@ -74,7 +75,7 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // 3. Renovar el token de acceso. El refresh token rota en cada uso; si se reutiliza uno viejo, se revocan todos.
   r.post('/v1/auth/refresh', {
-    schema: { tags: ['auth'], summary: 'Renovar tokens', body: z.object({ refreshToken: z.string().min(20) }) },
+    schema: { tags: ['auth'], summary: 'Renovar tokens', body: z.object({ refreshToken: z.string().min(20) }), response: { 200: S.Tokens } },
   }, async (req) => {
     const hash = hmac(ctx.config.HASH_PEPPER, req.body.refreshToken);
     type Outcome = { reuse: string } | { tokens: { accessToken: string; refreshToken: string } };
@@ -111,11 +112,12 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // ---------- Mi cuenta ----------
-  r.get('/v1/me', { schema: { tags: ['me'] }, preHandler: auth }, async (req) => {
-    const u = await one<Record<string, unknown>>(ctx.db, `SELECT id, phone, role, full_name, email, kyc_status, credit_cents, created_at FROM users WHERE id = $1`, [req.auth.id]);
-    const consents = await many(ctx.db, `SELECT kind, version, granted_at FROM consents WHERE user_id = $1 AND revoked_at IS NULL`, [req.auth.id]);
-    const physio = await one(ctx.db, `SELECT status, available FROM physios WHERE user_id = $1`, [req.auth.id]);
-    return { user: u, consents, physio: physio ?? null };
+  r.get('/v1/me', { schema: { tags: ['me'], response: { 200: S.Me } }, preHandler: auth }, async (req) => {
+    type MeT = z.output<typeof S.Me>;
+    const u = await one<MeT['user']>(ctx.db, `SELECT id, phone, role, full_name, email, kyc_status, credit_cents, created_at FROM users WHERE id = $1`, [req.auth.id]);
+    const consents = await many<MeT['consents'][number]>(ctx.db, `SELECT kind, version, granted_at FROM consents WHERE user_id = $1 AND revoked_at IS NULL`, [req.auth.id]);
+    const physio = await one<NonNullable<MeT['physio']>>(ctx.db, `SELECT status, available FROM physios WHERE user_id = $1`, [req.auth.id]);
+    return { user: u!, consents, physio: physio ?? null };
   });
 
   r.patch('/v1/me', {
@@ -167,9 +169,9 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   r.get('/v1/notifications', {
-    schema: { tags: ['me'], querystring: z.object({ limit: z.coerce.number().int().min(1).max(100).default(30), before: z.coerce.number().int().optional() }) },
+    schema: { tags: ['me'], querystring: z.object({ limit: z.coerce.number().int().min(1).max(100).default(30), before: z.coerce.number().int().optional() }), response: { 200: z.array(S.Notification) } },
     preHandler: auth,
-  }, async (req) => many(ctx.db, 'SELECT id, body, data, read_at, created_at FROM notifications WHERE user_id = $1 AND ($2::bigint IS NULL OR id < $2) ORDER BY id DESC LIMIT $3',
+  }, async (req) => many<z.output<typeof S.Notification>>(ctx.db, 'SELECT id, body, data, read_at, created_at FROM notifications WHERE user_id = $1 AND ($2::bigint IS NULL OR id < $2) ORDER BY id DESC LIMIT $3',
     [req.auth.id, req.query.before ?? null, req.query.limit]));
 
   r.post('/v1/notifications/read', { schema: { tags: ['me'] }, preHandler: auth }, async (req) => {

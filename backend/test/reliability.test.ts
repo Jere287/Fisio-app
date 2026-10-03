@@ -52,6 +52,16 @@ describe('Idempotencia', () => {
   });
 });
 
+describe('Firma del consentimiento en SVG', () => {
+  it('acepta un trazo SVG y rechaza uno con scripts', async () => {
+    const r = await post('/v1/bookings', body(at(11, 9)));
+    const bad = await post(`/v1/bookings/${r.body.id}/consent`, { signerName: 'Daniela Paredes', signerIsPatient: true, signatureSvg: '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0L10 10" onload="alert(1)"/></svg>' });
+    expect(bad.body.error.code).toBe('invalid_signature');
+    const ok = await post(`/v1/bookings/${r.body.id}/consent`, { signerName: 'Daniela Paredes', signerIsPatient: true, signatureSvg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100"><path d="M10 50 C40 10 80 90 120 40" stroke="#000" fill="none"/></svg>' });
+    expect(ok.status).toBe(200);
+  });
+});
+
 describe('Tareas programadas', () => {
   it('vence las solicitudes sin respuesta a los 30 minutos y libera el pago', async () => {
     const r = await post('/v1/bookings', body(at(16, 6)));
@@ -98,5 +108,30 @@ describe('Tareas programadas', () => {
     await api(env, physio.token).post('/v1/physios/me/selfie-check', { selfieRef: 'hoy' });
     const t = await api(env, physio.token).post('/v1/physios/me/availability-toggle', { available: true });
     expect(t.body.error.code).toBe('documents_expired');
+  });
+});
+
+describe('Contrato de respuestas', () => {
+  it('el perfil propio del fisio trae documentos y horario, sin acumulados internos', async () => {
+    const r = await api(env, physio.token).get('/v1/physios/me');
+    expect(r.status).toBe(200);
+    expect(r.body.documents.length).toBeGreaterThanOrEqual(3);
+    expect(r.body.documents[0].expires_at === null || /^\d{4}-\d{2}-\d{2}$/.test(r.body.documents[0].expires_at)).toBe(true);
+    expect(r.body).not.toHaveProperty('rating_sum');
+    expect(r.body).not.toHaveProperty('base_lat');
+  });
+
+  it('la cita indica si quien la mira ya la calificó', async () => {
+    const r = await post('/v1/bookings', { ...body(at(11, 12)), mode: 'video', address: undefined, lat: undefined, lng: undefined });
+    const p = api(env, physio.token);
+    await p.post(`/v1/bookings/${r.body.id}/accept`);
+    await post(`/v1/bookings/${r.body.id}/consent`, { signerName: 'Daniela Paredes', signerIsPatient: true, signaturePngBase64: PNG });
+    env.clock.t = new Date(at(11, 12));
+    await p.post(`/v1/bookings/${r.body.id}/start`);
+    expect((await p.post(`/v1/bookings/${r.body.id}/complete`, { assessment: 'Mejora del rango', plan: 'Continuar ejercicios' })).status).toBe(200);
+    expect((await api(env, patient.token).get(`/v1/bookings/${r.body.id}`)).body.reviewed).toBe(false);
+    await post(`/v1/bookings/${r.body.id}/reviews`, { stars: 5 });
+    expect((await api(env, patient.token).get(`/v1/bookings/${r.body.id}`)).body.reviewed).toBe(true);
+    expect((await p.get(`/v1/bookings/${r.body.id}`)).body.reviewed).toBe(false);
   });
 });

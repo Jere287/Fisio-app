@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
+import * as S from '../schemas.js';
 import { many, one, withTx } from '../db/pool.js';
 import { notFound } from '../lib/errors.js';
 import { authGuard, requireVerified } from '../plugins/auth.js';
@@ -35,6 +36,6 @@ export async function packageRoutes(app: FastifyInstance, ctx: AppContext) {
     return { id: pkg.id, sessions: n, priceCents: price, expiresAt: expires };
   });
 
-  r.get('/v1/packages', { schema: { tags: ['packages'] }, preHandler: auth }, async (req) =>
+  r.get('/v1/packages', { schema: { tags: ['packages'], response: { 200: z.array(S.Package) } }, preHandler: auth }, async (req) =>
     many(ctx.db, 'SELECT id, physio_id, sessions_total, sessions_left, price_cents, expires_at FROM packages WHERE owner_user_id = $1 ORDER BY created_at DESC', [req.auth.id]));
 }

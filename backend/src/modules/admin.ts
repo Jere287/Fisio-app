@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
+import * as S from '../schemas.js';
 import { audit, notify } from '../context.js';
 import { many, one, withTx } from '../db/pool.js';
 import { authGuard, requireRole } from '../plugins/auth.js';
@@ -48,10 +49,10 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   }));
 
   // Lo que ve el fisio en «Ganancias».
-  r.get('/v1/physios/me/earnings', { schema: { tags: ['physios'] }, preHandler: [auth, requireRole('physio')] }, async (req) => {
+  r.get('/v1/physios/me/earnings', { schema: { tags: ['physios'], response: { 200: S.Earnings } }, preHandler: [auth, requireRole('physio')] }, async (req) => {
     const pending = await one<{ total: number }>(ctx.db, `SELECT coalesce(sum(amount_cents), 0) AS total FROM ledger_entries WHERE physio_id = $1 AND account = 'physio_payable' AND payout_id IS NULL`, [req.auth.id]);
-    const payouts = await many(ctx.db, 'SELECT id, amount_cents, status, created_at FROM payouts WHERE physio_id = $1 ORDER BY created_at DESC LIMIT 20', [req.auth.id]);
-    const sessions = await many(ctx.db, `SELECT b.id, b.scheduled_at, b.price_cents, sum(l.amount_cents) FILTER (WHERE l.account = 'physio_payable') AS net_cents
+    const payouts = await many<z.output<typeof S.Earnings>['payouts'][number]>(ctx.db, 'SELECT id, amount_cents, status, created_at FROM payouts WHERE physio_id = $1 ORDER BY created_at DESC LIMIT 20', [req.auth.id]);
+    const sessions = await many<z.output<typeof S.Earnings>['sessions'][number]>(ctx.db, `SELECT b.id, b.scheduled_at, b.price_cents, sum(l.amount_cents) FILTER (WHERE l.account = 'physio_payable') AS net_cents
       FROM bookings b JOIN ledger_entries l ON l.booking_id = b.id WHERE b.physio_id = $1 GROUP BY b.id ORDER BY b.scheduled_at DESC LIMIT 50`, [req.auth.id]);
     return { pendingCents: pending?.total ?? 0, payouts, sessions };
   });

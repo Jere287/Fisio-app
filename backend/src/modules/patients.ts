@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
+import * as S from '../schemas.js';
 import { many, one, type Queryable } from '../db/pool.js';
 import { conflict, forbidden, notFound } from '../lib/errors.js';
 import { authGuard } from '../plugins/auth.js';
@@ -27,10 +28,10 @@ export async function patientRoutes(app: FastifyInstance, ctx: AppContext) {
     canConsent: z.boolean().default(true),
   });
 
-  r.get('/v1/patients', { schema: { tags: ['patients'], summary: 'Yo y mis familiares' }, preHandler: auth }, async (req) =>
+  r.get('/v1/patients', { schema: { tags: ['patients'], summary: 'Yo y mis familiares', response: { 200: z.array(S.Patient) } }, preHandler: auth }, async (req) =>
     many(ctx.db, `SELECT id, full_name, relationship, birth_year, can_consent FROM patients WHERE owner_user_id = $1 ORDER BY relationship <> 'self', created_at`, [req.auth.id]));
 
-  r.post('/v1/patients', { schema: { tags: ['patients'], summary: 'Agregar un familiar', body }, preHandler: auth }, async (req) => {
+  r.post('/v1/patients', { schema: { tags: ['patients'], summary: 'Agregar un familiar', body, response: { 200: S.Patient } }, preHandler: auth }, async (req) => {
     if (req.body.relationship.toLowerCase() === 'self') throw conflict('invalid_relationship', 'Usa otro parentesco.');
     return one(ctx.db, `INSERT INTO patients (owner_user_id, full_name, relationship, birth_year, can_consent) VALUES ($1, $2, $3, $4, $5)
       RETURNING id, full_name, relationship, birth_year, can_consent`, [req.auth.id, req.body.fullName, req.body.relationship, req.body.birthYear ?? null, req.body.canConsent]);

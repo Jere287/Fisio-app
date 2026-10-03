@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
+import * as S from '../schemas.js';
 import { notify } from '../context.js';
 import { many, one } from '../db/pool.js';
 import { forbidden, notFound } from '../lib/errors.js';
@@ -16,11 +17,11 @@ export async function clinicalRoutes(app: FastifyInstance, ctx: AppContext) {
   const auth = authGuard(ctx);
   const idParam = z.object({ id: z.string().uuid() });
 
-  r.get('/v1/exercises', { schema: { tags: ['clinical'] }, preHandler: auth }, async () =>
-    many(ctx.db, 'SELECT code, name, dose, instructions, video_url FROM exercises ORDER BY name'));
+  r.get('/v1/exercises', { schema: { tags: ['clinical'], response: { 200: z.array(S.Exercise) } }, preHandler: auth }, async () =>
+    many<z.output<typeof S.Exercise>>(ctx.db, 'SELECT code, name, dose, instructions, video_url FROM exercises ORDER BY name'));
 
   // Historia clínica: la ven el dueño de la cuenta y los fisios que atendieron a ese paciente. Cada acceso queda registrado.
-  r.get('/v1/patients/:id/record', { schema: { tags: ['clinical'], summary: 'Historia clínica', params: idParam }, preHandler: auth }, async (req) => {
+  r.get('/v1/patients/:id/record', { schema: { tags: ['clinical'], summary: 'Historia clínica', params: idParam, response: { 200: S.ClinicalRecord } }, preHandler: auth }, async (req) => {
     const p = await one<{ id: string; owner_user_id: string; full_name: string; relationship: string; birth_year: number | null }>(ctx.db, 'SELECT * FROM patients WHERE id = $1', [req.params.id]);
     if (!p) throw notFound('Paciente');
     const isOwner = p.owner_user_id === req.auth.id;
@@ -30,10 +31,10 @@ export async function clinicalRoutes(app: FastifyInstance, ctx: AppContext) {
 
     const notes = await many<Record<string, any>>(ctx.db, `SELECT n.id, n.created_at, n.pain_before, n.pain_after, n.subjective_enc, n.objective_enc, n.assessment_enc, n.plan_enc, u.full_name AS physio_name
       FROM clinical_notes n JOIN users u ON u.id = n.physio_id WHERE n.patient_id = $1 ORDER BY n.created_at`, [p.id]);
-    const exercises = await many(ctx.db, `SELECT e.code, e.name, e.dose, e.instructions, e.video_url FROM exercise_assignments a JOIN exercises e ON e.code = a.exercise_code WHERE a.patient_id = $1 ORDER BY e.name`, [p.id]);
+    const exercises = await many<z.output<typeof S.Exercise>>(ctx.db, `SELECT e.code, e.name, e.dose, e.instructions, e.video_url FROM exercise_assignments a JOIN exercises e ON e.code = a.exercise_code WHERE a.patient_id = $1 ORDER BY e.name`, [p.id]);
     const since = new Date(ctx.now().getTime() - 6 * 86400000);
     const logs = await many<{ done_on: string; n: number }>(ctx.db, `SELECT done_on::text, count(*) AS n FROM exercise_logs WHERE patient_id = $1 AND done_on >= $2::date GROUP BY done_on`, [p.id, localParts(since).date]);
-    const pain = await many(ctx.db, 'SELECT value, created_at FROM pain_logs WHERE patient_id = $1 ORDER BY created_at DESC LIMIT 30', [p.id]);
+    const pain = await many<{ value: number; created_at: Date }>(ctx.db, 'SELECT value, created_at FROM pain_logs WHERE patient_id = $1 ORDER BY created_at DESC LIMIT 30', [p.id]);
     const daysComplete = logs.filter(l => exercises.length && l.n >= exercises.length).length;
     return {
       patient: { id: p.id, name: p.full_name, relationship: p.relationship, birthYear: p.birth_year },

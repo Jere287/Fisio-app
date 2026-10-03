@@ -23,8 +23,9 @@ export function idempotency(ctx: AppContext) {
       'SELECT route, request_hash, status_code, response FROM idempotency_keys WHERE user_id = $1 AND key = $2', [req.auth.id, key]);
     if (!prev || prev.route !== route || prev.request_hash !== hash) throw unprocessable('idempotency_mismatch', 'Esta clave ya se usó con otra solicitud.');
     if (prev.status_code === null) throw conflict('request_in_progress', 'Tu solicitud anterior todavía se está procesando.');
-    reply.header('idempotent-replayed', 'true');
-    return reply.status(prev.status_code).send(prev.response);
+    // La respuesta guardada ya es JSON: se envía tal cual, sin volver a pasar por el serializador de la ruta.
+    reply.header('idempotent-replayed', 'true').header('content-type', 'application/json; charset=utf-8');
+    return reply.status(prev.status_code).serializer((body: unknown) => body as string).send(JSON.stringify(prev.response));
   };
 
   const onSend = async (req: FastifyRequest, reply: FastifyReply, payload: unknown) => {

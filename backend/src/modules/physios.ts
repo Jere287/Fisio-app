@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
+import * as S from '../schemas.js';
 import { audit, notify } from '../context.js';
 import { many, one, withTx } from '../db/pool.js';
 import { conflict, forbidden, notFound, unprocessable } from '../lib/errors.js';
@@ -46,12 +47,15 @@ export async function physioRoutes(app: FastifyInstance, ctx: AppContext) {
     return { status: 'applied' };
   });
 
-  r.get('/v1/physios/me', { schema: { tags: ['physios'] }, preHandler: auth }, async (req) => {
-    const p = await one(ctx.db, 'SELECT * FROM physios WHERE user_id = $1', [req.auth.id]);
+  r.get('/v1/physios/me', { schema: { tags: ['physios'], response: { 200: S.PhysioMe } }, preHandler: auth }, async (req) => {
+    const p = await one<{ status: 'applied' | 'approved' | 'rejected' | 'suspended'; available: boolean; last_selfie_at: Date | null; bio: string | null; university: string | null; years_experience: number;
+      specialties: string[]; gender: string | null; women_only: boolean; offers_video: boolean; price_cents: number; video_price_cents: number; radius_km: number; rating_sum: number; rating_count: number }>(ctx.db, 'SELECT * FROM physios WHERE user_id = $1', [req.auth.id]);
     if (!p) throw notFound('Perfil de fisioterapeuta');
-    const documents = await many(ctx.db, 'SELECT id, kind, title, reference, status, expires_at FROM physio_documents WHERE physio_id = $1 ORDER BY created_at', [req.auth.id]);
-    const availability = await many(ctx.db, 'SELECT weekday, start_min, end_min FROM availability WHERE physio_id = $1 ORDER BY weekday, start_min', [req.auth.id]);
-    return { ...p, documents, availability };
+    const documents = await many<z.output<typeof S.PhysioMe>['documents'][number]>(ctx.db,
+      `SELECT id, kind, title, reference, status, to_char(expires_at, 'YYYY-MM-DD') AS expires_at FROM physio_documents WHERE physio_id = $1 ORDER BY created_at`, [req.auth.id]);
+    const availability = await many<{ weekday: number; start_min: number; end_min: number }>(ctx.db, 'SELECT weekday, start_min, end_min FROM availability WHERE physio_id = $1 ORDER BY weekday, start_min', [req.auth.id]);
+    const { rating_sum, rating_count, last_selfie_at, ...rest } = p;
+    return { ...rest, lastSelfieAt: last_selfie_at, rating: rating_count ? Math.round((rating_sum / rating_count) * 10) / 10 : null, ratingCount: rating_count, documents, availability };
   });
 
   r.patch('/v1/physios/me', { schema: { tags: ['physios'], body: profile.partial() }, preHandler: auth }, async (req) => {
@@ -98,7 +102,7 @@ export async function physioRoutes(app: FastifyInstance, ctx: AppContext) {
     return { ok: true, score: m.score };
   });
 
-  r.post('/v1/physios/me/availability-toggle', { schema: { tags: ['physios'], body: z.object({ available: z.boolean() }) }, preHandler: [auth, requireRole('physio')] }, async (req) => {
+  r.post('/v1/physios/me/availability-toggle', { schema: { tags: ['physios'], body: z.object({ available: z.boolean() }), response: { 200: z.object({ available: z.boolean() }) } }, preHandler: [auth, requireRole('physio')] }, async (req) => {
     const p = await one<{ status: string; last_selfie_at: Date | null }>(ctx.db, 'SELECT status, last_selfie_at FROM physios WHERE user_id = $1', [req.auth.id]);
     if (!p || p.status !== 'approved') throw forbidden('Tu perfil todavía no está aprobado.');
     if (req.body.available) {
@@ -125,11 +129,13 @@ export async function physioRoutes(app: FastifyInstance, ctx: AppContext) {
         availableNow: z.coerce.boolean().optional(),
         limit: z.coerce.number().int().min(1).max(50).default(20),
       }),
+      response: { 200: z.array(S.PhysioCard) },
     },
     preHandler: auth,
   }, async (req) => {
     const q = req.query;
-    const rows = await many<Record<string, any>>(ctx.db, `
+    type Row = Omit<z.output<typeof S.PhysioCard>, 'distanceKm' | 'rating' | 'ratingCount'> & { meters: number; rating_sum: number; rating_count: number };
+    const rows = await many<Row>(ctx.db, `
       SELECT p.user_id AS id, u.full_name, p.specialties, p.price_cents, p.video_price_cents, p.offers_video, p.gender, p.women_only,
              p.years_experience, p.available, p.rating_sum, p.rating_count, p.radius_km,
              round(p.base_lat::numeric, 2) AS approx_lat, round(p.base_lng::numeric, 2) AS approx_lng,
@@ -149,12 +155,13 @@ export async function physioRoutes(app: FastifyInstance, ctx: AppContext) {
     }));
   });
 
-  r.get('/v1/physios/:id', { schema: { tags: ['physios'], params: z.object({ id: z.string().uuid() }) }, preHandler: auth }, async (req) => {
-    const p = await one<Record<string, any>>(ctx.db, `SELECT p.user_id AS id, u.full_name, p.bio, p.university, p.years_experience, p.specialties, p.gender, p.women_only, p.offers_video,
+  r.get('/v1/physios/:id', { schema: { tags: ['physios'], params: z.object({ id: z.string().uuid() }), response: { 200: S.PhysioProfile } }, preHandler: auth }, async (req) => {
+    type ProfileRow = Omit<z.output<typeof S.PhysioProfile>, 'rating' | 'ratingCount' | 'certificates' | 'reviews'> & { rating_sum: number; rating_count: number };
+    const p = await one<ProfileRow>(ctx.db, `SELECT p.user_id AS id, u.full_name, p.bio, p.university, p.years_experience, p.specialties, p.gender, p.women_only, p.offers_video,
       p.price_cents, p.video_price_cents, p.radius_km, p.rating_sum, p.rating_count FROM physios p JOIN users u ON u.id = p.user_id WHERE p.user_id = $1 AND p.status = 'approved'`, [req.params.id]);
     if (!p) throw notFound('Fisioterapeuta');
-    const certificates = await many(ctx.db, `SELECT kind, title FROM physio_documents WHERE physio_id = $1 AND status = 'approved' ORDER BY kind, created_at`, [p.id]);
-    const reviews = await many(ctx.db, `SELECT r.stars, r.tags, r.comment, r.created_at, split_part(u.full_name, ' ', 1) AS author
+    const certificates = await many<{ kind: string; title: string }>(ctx.db, `SELECT kind, title FROM physio_documents WHERE physio_id = $1 AND status = 'approved' ORDER BY kind, created_at`, [p.id]);
+    const reviews = await many<z.output<typeof S.PhysioProfile>['reviews'][number]>(ctx.db, `SELECT r.stars, r.tags, r.comment, r.created_at, split_part(u.full_name, ' ', 1) AS author
       FROM reviews r JOIN users u ON u.id = r.author_id WHERE r.target_id = $1 AND r.direction = 'patient_to_physio' ORDER BY r.created_at DESC LIMIT 10`, [p.id]);
     const { rating_sum, rating_count, ...rest } = p;
     return { ...rest, rating: rating_count ? Math.round((rating_sum / rating_count) * 10) / 10 : null, ratingCount: rating_count, certificates, reviews };
@@ -162,7 +169,7 @@ export async function physioRoutes(app: FastifyInstance, ctx: AppContext) {
 
   // Horarios libres de un día: horario semanal menos citas ya tomadas y horas pasadas.
   r.get('/v1/physios/:id/slots', {
-    schema: { tags: ['physios'], params: z.object({ id: z.string().uuid() }), querystring: z.object({ date: z.string().date(), mode: z.enum(['home', 'video']).default('home') }) },
+    schema: { tags: ['physios'], params: z.object({ id: z.string().uuid() }), querystring: z.object({ date: z.string().date(), mode: z.enum(['home', 'video']).default('home') }), response: { 200: S.Slots } },
     preHandler: auth,
   }, async (req) => {
     const dur = durationFor(req.query.mode);

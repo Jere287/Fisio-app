@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
+
 import { audit, notify } from '../context.js';
 import { one, withTx } from '../db/pool.js';
 import { hmac, safeEqual } from '../lib/crypto.js';
@@ -16,7 +17,7 @@ export async function kycRoutes(app: FastifyInstance, ctx: AppContext) {
   const auth = authGuard(ctx);
 
   // Inicia una verificación. Exige los consentimientos de biometría y de consulta al Registro Civil.
-  r.post('/v1/kyc/sessions', { schema: { tags: ['kyc'], summary: 'Iniciar verificación de identidad' }, preHandler: auth }, async (req) => {
+  r.post('/v1/kyc/sessions', { schema: { tags: ['kyc'], summary: 'Iniciar verificación de identidad', response: { 200: z.object({ sessionId: z.uuid(), uploadUrls: z.record(z.string(), z.string()) }) } }, preHandler: auth }, async (req) => {
     const consents = await one<{ n: number }>(ctx.db,
       `SELECT count(DISTINCT kind) AS n FROM consents WHERE user_id = $1 AND kind IN ('biometric', 'registro_civil') AND revoked_at IS NULL`, [req.auth.id]);
     if ((consents?.n ?? 0) < 2) throw unprocessable('consent_required', 'Necesitamos tu autorización para usar tu rostro y consultar el Registro Civil. También puedes verificarte por videollamada con un agente.');
@@ -39,6 +40,7 @@ export async function kycRoutes(app: FastifyInstance, ctx: AppContext) {
         cedula: z.string(), dactilar: z.string().transform(s => s.toUpperCase()),
         frontRef: z.string().min(1), backRef: z.string().min(1), selfieRef: z.string().min(1),
       }),
+      response: { 200: z.object({ status: z.enum(['approved', 'review', 'rejected']), reason: z.string().nullable() }) },
     },
     preHandler: auth,
   }, async (req) => {

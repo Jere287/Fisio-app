@@ -41,7 +41,27 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sent": {
+                      "type": "boolean"
+                    },
+                    "expiresInSec": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "sent",
+                    "expiresInSec"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -77,7 +97,55 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "refreshToken": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "patient",
+                            "physio",
+                            "admin"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "role"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "isNew": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "accessToken",
+                    "refreshToken",
+                    "user",
+                    "isNew"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -109,7 +177,27 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "refreshToken": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "accessToken",
+                    "refreshToken"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -164,7 +252,127 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "patient",
+                            "physio",
+                            "admin"
+                          ]
+                        },
+                        "full_name": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "email": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "kyc_status": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "pending",
+                            "approved",
+                            "review",
+                            "rejected",
+                            "pending_agent"
+                          ]
+                        },
+                        "credit_cents": {
+                          "type": "number"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "phone",
+                        "role",
+                        "full_name",
+                        "email",
+                        "kyc_status",
+                        "credit_cents",
+                        "created_at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "consents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string"
+                          },
+                          "version": {
+                            "type": "string"
+                          },
+                          "granted_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "version",
+                          "granted_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "physio": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "applied",
+                            "approved",
+                            "rejected",
+                            "suspended"
+                          ]
+                        },
+                        "available": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "available"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "consents",
+                    "physio"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -320,7 +528,46 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "body": {
+                        "type": "string"
+                      },
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "read_at": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "body",
+                      "data",
+                      "read_at",
+                      "created_at"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -345,7 +592,45 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "full_name": {
+                        "type": "string"
+                      },
+                      "relationship": {
+                        "type": "string"
+                      },
+                      "birth_year": {
+                        "nullable": true,
+                        "type": "number"
+                      },
+                      "can_consent": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "full_name",
+                      "relationship",
+                      "birth_year",
+                      "can_consent"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -391,7 +676,42 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "full_name": {
+                      "type": "string"
+                    },
+                    "relationship": {
+                      "type": "string"
+                    },
+                    "birth_year": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "can_consent": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "full_name",
+                    "relationship",
+                    "birth_year",
+                    "can_consent"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -459,7 +779,32 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sessionId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "uploadUrls": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "sessionId",
+                    "uploadUrls"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -526,7 +871,33 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "approved",
+                        "review",
+                        "rejected"
+                      ]
+                    },
+                    "reason": {
+                      "nullable": true,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "reason"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -764,7 +1135,164 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "applied",
+                        "approved",
+                        "rejected",
+                        "suspended"
+                      ]
+                    },
+                    "available": {
+                      "type": "boolean"
+                    },
+                    "lastSelfieAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "bio": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "university": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "years_experience": {
+                      "type": "number"
+                    },
+                    "specialties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "gender": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "women_only": {
+                      "type": "boolean"
+                    },
+                    "offers_video": {
+                      "type": "boolean"
+                    },
+                    "price_cents": {
+                      "type": "number"
+                    },
+                    "video_price_cents": {
+                      "type": "number"
+                    },
+                    "radius_km": {
+                      "type": "number"
+                    },
+                    "rating": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "ratingCount": {
+                      "type": "number"
+                    },
+                    "documents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "senescyt",
+                              "msp",
+                              "criminal_record",
+                              "certificate"
+                            ]
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "reference": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "expires_at": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "title",
+                          "reference",
+                          "status",
+                          "expires_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "availability": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "weekday": {
+                            "type": "number"
+                          },
+                          "start_min": {
+                            "type": "number"
+                          },
+                          "end_min": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "weekday",
+                          "start_min",
+                          "end_min"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "available",
+                    "lastSelfieAt",
+                    "bio",
+                    "university",
+                    "years_experience",
+                    "specialties",
+                    "gender",
+                    "women_only",
+                    "offers_video",
+                    "price_cents",
+                    "video_price_cents",
+                    "radius_km",
+                    "rating",
+                    "ratingCount",
+                    "documents",
+                    "availability"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -1022,7 +1550,23 @@
         },
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "available": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "available"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -1105,7 +1649,94 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "full_name": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "specialties": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "price_cents": {
+                        "type": "number"
+                      },
+                      "video_price_cents": {
+                        "type": "number"
+                      },
+                      "offers_video": {
+                        "type": "boolean"
+                      },
+                      "gender": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "women_only": {
+                        "type": "boolean"
+                      },
+                      "years_experience": {
+                        "type": "number"
+                      },
+                      "available": {
+                        "type": "boolean"
+                      },
+                      "radius_km": {
+                        "type": "number"
+                      },
+                      "approx_lat": {
+                        "type": "number"
+                      },
+                      "approx_lng": {
+                        "type": "number"
+                      },
+                      "distanceKm": {
+                        "type": "number"
+                      },
+                      "rating": {
+                        "nullable": true,
+                        "type": "number"
+                      },
+                      "ratingCount": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "full_name",
+                      "specialties",
+                      "price_cents",
+                      "video_price_cents",
+                      "offers_video",
+                      "gender",
+                      "women_only",
+                      "years_experience",
+                      "available",
+                      "radius_km",
+                      "approx_lat",
+                      "approx_lng",
+                      "distanceKm",
+                      "rating",
+                      "ratingCount"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1129,7 +1760,142 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "full_name": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "bio": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "university": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "years_experience": {
+                      "type": "number"
+                    },
+                    "specialties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "gender": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "women_only": {
+                      "type": "boolean"
+                    },
+                    "offers_video": {
+                      "type": "boolean"
+                    },
+                    "price_cents": {
+                      "type": "number"
+                    },
+                    "video_price_cents": {
+                      "type": "number"
+                    },
+                    "radius_km": {
+                      "type": "number"
+                    },
+                    "rating": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "ratingCount": {
+                      "type": "number"
+                    },
+                    "certificates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "title"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "reviews": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "stars": {
+                            "type": "number"
+                          },
+                          "tags": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "comment": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "author": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "stars",
+                          "tags",
+                          "comment",
+                          "created_at",
+                          "author"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "full_name",
+                    "bio",
+                    "university",
+                    "years_experience",
+                    "specialties",
+                    "gender",
+                    "women_only",
+                    "offers_video",
+                    "price_cents",
+                    "video_price_cents",
+                    "radius_km",
+                    "rating",
+                    "ratingCount",
+                    "certificates",
+                    "reviews"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -1176,7 +1942,42 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "home",
+                        "video"
+                      ]
+                    },
+                    "durationMin": {
+                      "type": "number"
+                    },
+                    "slots": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "mode",
+                    "durationMin",
+                    "slots"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -1449,8 +2250,210 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Default Response"
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "home",
+                        "video"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "confirmed",
+                        "en_route",
+                        "arrived",
+                        "in_progress",
+                        "completed",
+                        "cancelled",
+                        "rejected",
+                        "no_show"
+                      ]
+                    },
+                    "scheduledAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "durationMin": {
+                      "type": "number"
+                    },
+                    "pain": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "painScore": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "comments": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "priceCents": {
+                      "type": "number"
+                    },
+                    "feeCents": {
+                      "type": "number"
+                    },
+                    "creditCents": {
+                      "type": "number"
+                    },
+                    "totalCents": {
+                      "type": "number"
+                    },
+                    "usesPackage": {
+                      "type": "boolean"
+                    },
+                    "consentSigned": {
+                      "type": "boolean"
+                    },
+                    "doorConfirmed": {
+                      "type": "boolean"
+                    },
+                    "reviewed": {
+                      "type": "boolean"
+                    },
+                    "patient": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "relationship": {
+                          "type": "string"
+                        },
+                        "age": {
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "canConsent": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "age"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "companion": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "companionName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "address": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lat": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "lng": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "physio": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "pin": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "physioLocation": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "lat": {
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "lng": {
+                          "nullable": true,
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "lat",
+                        "lng"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "bookedBy": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "verified": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "verified"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "mode",
+                    "status",
+                    "scheduledAt",
+                    "durationMin",
+                    "pain",
+                    "painScore",
+                    "comments",
+                    "priceCents",
+                    "feeCents",
+                    "creditCents",
+                    "totalCents",
+                    "usesPackage",
+                    "consentSigned",
+                    "doorConfirmed",
+                    "reviewed",
+                    "patient",
+                    "companion",
+                    "companionName",
+                    "address",
+                    "lat",
+                    "lng"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       },
@@ -1497,7 +2500,212 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "home",
+                          "video"
+                        ]
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "pending",
+                          "confirmed",
+                          "en_route",
+                          "arrived",
+                          "in_progress",
+                          "completed",
+                          "cancelled",
+                          "rejected",
+                          "no_show"
+                        ]
+                      },
+                      "scheduledAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "durationMin": {
+                        "type": "number"
+                      },
+                      "pain": {
+                        "type": "object",
+                        "additionalProperties": {}
+                      },
+                      "painScore": {
+                        "nullable": true,
+                        "type": "number"
+                      },
+                      "comments": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "priceCents": {
+                        "type": "number"
+                      },
+                      "feeCents": {
+                        "type": "number"
+                      },
+                      "creditCents": {
+                        "type": "number"
+                      },
+                      "totalCents": {
+                        "type": "number"
+                      },
+                      "usesPackage": {
+                        "type": "boolean"
+                      },
+                      "consentSigned": {
+                        "type": "boolean"
+                      },
+                      "doorConfirmed": {
+                        "type": "boolean"
+                      },
+                      "reviewed": {
+                        "type": "boolean"
+                      },
+                      "patient": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "relationship": {
+                            "type": "string"
+                          },
+                          "age": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "canConsent": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "age"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "companion": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "companionName": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "address": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "lat": {
+                        "nullable": true,
+                        "type": "number"
+                      },
+                      "lng": {
+                        "nullable": true,
+                        "type": "number"
+                      },
+                      "physio": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "name": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "pin": {
+                        "nullable": true,
+                        "type": "string"
+                      },
+                      "physioLocation": {
+                        "nullable": true,
+                        "type": "object",
+                        "properties": {
+                          "lat": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "lng": {
+                            "nullable": true,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "lat",
+                          "lng"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "bookedBy": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "verified": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "verified"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "mode",
+                      "status",
+                      "scheduledAt",
+                      "durationMin",
+                      "pain",
+                      "painScore",
+                      "comments",
+                      "priceCents",
+                      "feeCents",
+                      "creditCents",
+                      "totalCents",
+                      "usesPackage",
+                      "consentSigned",
+                      "doorConfirmed",
+                      "reviewed",
+                      "patient",
+                      "companion",
+                      "companionName",
+                      "address",
+                      "lat",
+                      "lng"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1521,7 +2729,209 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "home",
+                        "video"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "confirmed",
+                        "en_route",
+                        "arrived",
+                        "in_progress",
+                        "completed",
+                        "cancelled",
+                        "rejected",
+                        "no_show"
+                      ]
+                    },
+                    "scheduledAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "durationMin": {
+                      "type": "number"
+                    },
+                    "pain": {
+                      "type": "object",
+                      "additionalProperties": {}
+                    },
+                    "painScore": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "comments": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "priceCents": {
+                      "type": "number"
+                    },
+                    "feeCents": {
+                      "type": "number"
+                    },
+                    "creditCents": {
+                      "type": "number"
+                    },
+                    "totalCents": {
+                      "type": "number"
+                    },
+                    "usesPackage": {
+                      "type": "boolean"
+                    },
+                    "consentSigned": {
+                      "type": "boolean"
+                    },
+                    "doorConfirmed": {
+                      "type": "boolean"
+                    },
+                    "reviewed": {
+                      "type": "boolean"
+                    },
+                    "patient": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "relationship": {
+                          "type": "string"
+                        },
+                        "age": {
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "canConsent": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "age"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "companion": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "companionName": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "address": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "lat": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "lng": {
+                      "nullable": true,
+                      "type": "number"
+                    },
+                    "physio": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "nullable": true,
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "pin": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "physioLocation": {
+                      "nullable": true,
+                      "type": "object",
+                      "properties": {
+                        "lat": {
+                          "nullable": true,
+                          "type": "number"
+                        },
+                        "lng": {
+                          "nullable": true,
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "lat",
+                        "lng"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "bookedBy": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "verified": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "verified"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "mode",
+                    "status",
+                    "scheduledAt",
+                    "durationMin",
+                    "pain",
+                    "painScore",
+                    "comments",
+                    "priceCents",
+                    "feeCents",
+                    "creditCents",
+                    "totalCents",
+                    "usesPackage",
+                    "consentSigned",
+                    "doorConfirmed",
+                    "reviewed",
+                    "patient",
+                    "companion",
+                    "companionName",
+                    "address",
+                    "lat",
+                    "lng"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -1863,12 +3273,16 @@
                     "type": "string",
                     "minLength": 100,
                     "maxLength": 1400000
+                  },
+                  "signatureSvg": {
+                    "type": "string",
+                    "minLength": 30,
+                    "maxLength": 200000
                   }
                 },
                 "required": [
                   "signerName",
-                  "signerIsPatient",
-                  "signaturePngBase64"
+                  "signerIsPatient"
                 ]
               }
             }
@@ -2111,7 +3525,43 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "dose": {
+                        "type": "string"
+                      },
+                      "instructions": {
+                        "type": "string"
+                      },
+                      "video_url": {
+                        "nullable": true,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "name",
+                      "dose",
+                      "instructions",
+                      "video_url"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2136,7 +3586,174 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "patient": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "relationship": {
+                          "type": "string"
+                        },
+                        "birthYear": {
+                          "nullable": true,
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "relationship",
+                        "birthYear"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "notes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "physio": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "painBefore": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "painAfter": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "subjective": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "objective": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "assessment": {
+                            "type": "string"
+                          },
+                          "plan": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "date",
+                          "physio",
+                          "painBefore",
+                          "painAfter",
+                          "subjective",
+                          "objective",
+                          "assessment",
+                          "plan"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "exercises": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "dose": {
+                            "type": "string"
+                          },
+                          "instructions": {
+                            "type": "string"
+                          },
+                          "video_url": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "code",
+                          "name",
+                          "dose",
+                          "instructions",
+                          "video_url"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "painLogs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "number"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "created_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "adherence": {
+                      "type": "object",
+                      "properties": {
+                        "daysCompleteLast7": {
+                          "type": "number"
+                        },
+                        "percent": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "daysCompleteLast7",
+                        "percent"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "patient",
+                    "notes",
+                    "exercises",
+                    "painLogs",
+                    "adherence"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -2424,7 +4041,51 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "physio_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "sessions_total": {
+                        "type": "number"
+                      },
+                      "sessions_left": {
+                        "type": "number"
+                      },
+                      "price_cents": {
+                        "type": "number"
+                      },
+                      "expires_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "physio_id",
+                      "sessions_total",
+                      "sessions_left",
+                      "price_cents",
+                      "expires_at"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2518,7 +4179,86 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pendingCents": {
+                      "type": "number"
+                    },
+                    "payouts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "amount_cents": {
+                            "type": "number"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "amount_cents",
+                          "status",
+                          "created_at"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "sessions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "scheduled_at": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "price_cents": {
+                            "type": "number"
+                          },
+                          "net_cents": {
+                            "nullable": true,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "scheduled_at",
+                          "price_cents",
+                          "net_cents"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "pendingCents",
+                    "payouts",
+                    "sessions"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
