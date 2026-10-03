@@ -57,6 +57,10 @@ src/
 - **Reservas idempotentes.** El formulario genera una `Idempotency-Key` y la reutiliza en los reintentos: un doble toque o una mala señal nunca crean dos citas ni dos cobros.
 - **Datos vivos sin WebSockets (por ahora).** La cita activa se consulta cada 5 s y la lista cada 15 s. Al terminar una acción se invalidan las consultas afectadas.
 - **Firma en SVG.** El consentimiento se firma con el dedo y se envía como trazo vectorial: pesa pocos kilobytes y no necesita librerías nativas extra.
+- **Mapas.** En iPhone se usa Apple Maps y en Android Google Maps (`react-native-maps`, incluido en Expo Go). En web, Leaflet con OpenStreetMap. Los tres comparten la misma interfaz (`src/ui/map`). Para publicar en Android hace falta una llave de Google Maps en `GOOGLE_MAPS_ANDROID_KEY` (la lee `app.config.js`). Para la web en producción conviene un proveedor de mapas con contrato (Mapbox, MapTiler o Google) en `EXPO_PUBLIC_MAP_TILES`: los mapas públicos de OpenStreetMap no permiten mucho tráfico comercial.
+- **Ubicación.** El paciente marca su puerta en el mapa (tocando o arrastrando el punto); en el teléfono la dirección se completa sola con el GPS. Mientras el fisio va en camino, su app envía la ubicación cada ~10 s y el paciente lo ve con distancia y tiempo estimado. El fisio navega con Google Maps o Waze.
+- **Triaje en dos niveles.** Primero una pregunta de sí o no; solo si responde «sí» aparece la lista. Las señales de emergencia indican el 911; las de «médico primero» permiten reservar con autorización médica. La lógica está en `src/lib/labels.ts` y tiene pruebas.
+- **Confirmaciones.** Cancelar, rechazar, «No coincide» en la puerta, la alerta de ayuda y eliminar la cuenta piden confirmación y explican la consecuencia (por ejemplo, el cargo por cancelar tarde).
 - **Hora de Quito siempre.** Las fechas se muestran en UTC−5, aunque el teléfono esté en otra zona horaria.
 - **Accesible.** Botones con rol y estado, campos con etiqueta, tamaños de toque de 48 px y modo oscuro.
 
@@ -64,12 +68,12 @@ src/
 
 `e2e/flujo-completo.cjs` recorre el flujo principal con dos navegadores a la vez:
 
-1. El paciente busca y reserva.
-2. El fisio acepta, sale y marca «Llegué».
+1. El paciente ve el mapa, prueba el triaje (emergencia y «médico primero») y reserva.
+2. El fisio acepta y sale; el paciente lo ve acercarse en el mapa; el fisio marca «Llegué».
 3. El paciente confirma el rostro en la puerta y firma.
 4. El fisio prueba un PIN incorrecto y luego el correcto, escribe la nota SOAP y termina.
 5. El paciente califica.
-6. El fisio ve sus ganancias.
+6. El fisio ve sus ganancias; el paciente abre la ayuda y el diálogo de eliminar cuenta.
 
 ```bash
 # 1) Backend con SMS_PROVIDER=console, CORS_ORIGINS=http://localhost:8099 y datos de ejemplo, guardando su log
@@ -87,6 +91,6 @@ Las capturas quedan en `e2e/capturas/`.
 - Subir las fotos (cédula, selfie, documentos) con URLs prefirmadas. Hoy se envía una referencia; está marcado con `TODO` en el código.
 - Integrar el SDK del proveedor de verificación de identidad para la prueba de vida.
 - Notificaciones push (Expo Notifications + Firebase/APNs).
-- Mapa en vivo del fisio en camino.
+- Ubicación en segundo plano para el fisio (hoy se comparte con la app abierta).
 - Compilar con EAS Build y publicar en App Store y Google Play.
 - `npm audit` marca alertas en dependencias de las herramientas de Expo (compilación y servidor de desarrollo). No viajan dentro de la app; se resuelven al actualizar el SDK.

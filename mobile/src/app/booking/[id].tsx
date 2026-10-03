@@ -1,18 +1,25 @@
 import { useState } from 'react';
 import { Linking } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError, call, client } from '@/api/client';
 import { keys, useBooking, useExercises } from '@/api/queries';
 import type { Booking } from '@/api/types';
 import { currentCoords } from '@/lib/useLocation';
+import { useShareLocation } from '@/lib/useShareLocation';
+import { distanceM, etaMinutes, formatDistance, googleMapsUrl, midpoint, wazeUrl, type LatLng } from '@/lib/geo';
+import { PlaceMap } from '@/ui/map';
+import { useConfirm } from '@/ui/Confirm';
 import { useNow } from '@/lib/useNow';
 import { dateTime, money } from '@/lib/format';
-import { STATUS, ACTIVE_STATUSES, painSummary } from '@/lib/labels';
+import { STATUS, ACTIVE_STATUSES, flagLabel, painSummary } from '@/lib/labels';
 import { SignaturePad } from '@/ui/SignaturePad';
 import { Badge, Button, Card, Chip, ErrorState, Field, Loading, Notice, Row, Screen, Stack, Text } from '@/ui';
 
 const NO_SHOW_GRACE_MS = 20 * 60000;
+const LATE_CANCEL_MS = 12 * 3600000;
+const ARRIVAL_RADIUS_M = 150;
+const open = (url: string) => { Linking.openURL(url).catch(() => {}); };
 
 // Detalle de una cita. La misma pantalla sirve a las dos partes: el fisio recibe `bookedBy`, el paciente no.
 export default function BookingDetail() {
@@ -45,11 +52,11 @@ function Summary({ b, asPhysio }: { b: Booking; asPhysio: boolean }) {
       {b.companionName ? <Text variant="small">Acompañante: {b.companionName}</Text> : null}
       {pain ? <Text variant="small">Dolor: {pain}</Text> : null}
       {b.comments ? <Text variant="small" muted>«{b.comments}»</Text> : null}
+      {b.redFlags.length ? (
+        <Notice tone="warn" testID="booking-red-flags">{`Señales reportadas: ${b.redFlags.map(flagLabel).join('; ').toLowerCase()}.${b.medicalClearance ? ' El paciente indica que un médico ya lo evaluó y le indicó fisioterapia.' : ''}`}</Notice>
+      ) : null}
       {asPhysio && b.bookedBy ? <Text variant="tiny" muted>Reservó {b.bookedBy.name}{b.bookedBy.verified ? ' · identidad verificada' : ''}</Text> : null}
       {!asPhysio ? <Text variant="small">{b.usesPackage ? 'Sesión de tu paquete' : `Total ${money(b.totalCents)}${b.creditCents ? ` (crédito ${money(b.creditCents)})` : ''}`}</Text> : null}
-      {asPhysio && b.mode === 'home' && b.lat !== null && b.lng !== null ? (
-        <Button small kind="line" title="Abrir en el mapa" onPress={() => { Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${b.lat},${b.lng}`).catch(() => {}); }} />
-      ) : null}
     </Card>
   );
 }
@@ -73,14 +80,32 @@ function PatientActions({ b }: { b: Booking }) {
   const noShow = useAction(b, () => call(() => client.POST('/v1/bookings/{id}/no-show', path(b))));
   const door = useAction(b, (matches: boolean) => call(() => client.POST('/v1/bookings/{id}/door', { ...path(b), body: { matches } })));
   const now = useNow();
+  const [dialog, confirm] = useConfirm();
   const late = now > new Date(b.scheduledAt).getTime() + NO_SHOW_GRACE_MS;
+  const lateFee = b.status !== 'pending' && new Date(b.scheduledAt).getTime() - now < LATE_CANCEL_MS && !b.usesPackage ? Math.round(b.priceCents * 0.5) : 0;
   const err = errMsg(cancel.error ?? noShow.error ?? door.error);
+
+  const askCancel = async () => {
+    const ok = await confirm({
+      title: '¿Cancelar la cita?', confirm: 'Sí, cancelar', cancel: 'No, mantenerla', danger: true,
+      message: lateFee ? `Faltan menos de 12 horas: se cobrará el 50 % de la sesión (${money(lateFee)}) y se libera el resto.` : 'Es gratis: liberamos de inmediato el valor retenido en tu tarjeta.',
+    });
+    if (ok) cancel.mutate(undefined);
+  };
+  const askDoorMismatch = async () => {
+    const ok = await confirm({
+      title: 'No abras la puerta', confirm: 'No coincide, avisar a seguridad', cancel: 'Volver', danger: true,
+      message: 'Cancelaremos la cita sin costo, suspenderemos al especialista mientras investigamos y nuestro equipo de seguridad te llamará. Si te sientes en peligro, llama al 911.',
+    });
+    if (ok) door.mutate(false);
+  };
 
   return (
     <Stack gap={12}>
+      {dialog}
       {err ? <Notice tone="danger">{err}</Notice> : null}
       {b.status === 'pending' ? <Notice>Esperando que el especialista acepte. Si no responde en 30 minutos, liberamos el cobro retenido.</Notice> : null}
-      {b.status === 'en_route' ? <Notice testID="en-route">Tu fisio va en camino.</Notice> : null}
+      {b.status === 'en_route' && b.lat !== null && b.lng !== null ? <Tracking b={b} home={{ lat: b.lat, lng: b.lng }} /> : null}
 
       {b.status === 'arrived' && !b.doorConfirmed ? (
         <Card tone="warn">
@@ -88,7 +113,7 @@ function PatientActions({ b }: { b: Booking }) {
           <Text variant="small" muted>Compara su rostro con la foto de {b.physio?.name}. Si no coincide, no abras: cancelamos la cita y avisamos a seguridad.</Text>
           <Row>
             <Button flex testID="door-yes" title="Sí, es la persona" loading={door.isPending} onPress={() => door.mutate(true)} />
-            <Button flex testID="door-no" kind="danger" title="No coincide" disabled={door.isPending} onPress={() => door.mutate(false)} />
+            <Button flex testID="door-no" kind="danger" title="No coincide" disabled={door.isPending} onPress={() => { askDoorMismatch().catch(() => {}); }} />
           </Row>
         </Card>
       ) : null}
@@ -106,13 +131,32 @@ function PatientActions({ b }: { b: Booking }) {
       {b.status === 'completed' ? <AfterSession b={b} target="physio" /> : null}
 
       {['pending', 'confirmed', 'en_route'].includes(b.status) ? (
-        <Button kind="line" testID="cancel-booking" title="Cancelar cita" loading={cancel.isPending} onPress={() => cancel.mutate(undefined)} />
+        <Button kind="line" testID="cancel-booking" title="Cancelar cita" loading={cancel.isPending} onPress={() => { askCancel().catch(() => {}); }} />
       ) : null}
       {b.mode === 'home' && ['confirmed', 'en_route'].includes(b.status) && late ? (
         <Button kind="line" testID="report-no-show" title="Mi fisio no llegó" loading={noShow.isPending} onPress={() => noShow.mutate(undefined)} />
       ) : null}
       {['pending', 'confirmed'].includes(b.status) ? <Text variant="tiny" muted>Cancelar es gratis hasta 12 horas antes. Después se cobra el 50 %.</Text> : null}
+      <Button small kind="line" title="Ayuda y garantías" onPress={() => router.push('/help')} />
     </Stack>
+  );
+}
+
+// Seguimiento del fisio en camino: mapa con los dos puntos, distancia y tiempo estimado.
+function Tracking({ b, home }: { b: Booking; home: LatLng }) {
+  const now = useNow(5000);
+  const loc = b.physioLocation;
+  const there = loc && loc.lat !== null && loc.lng !== null ? { lat: loc.lat, lng: loc.lng } : null;
+  const d = there ? distanceM(there, home) : null;
+  const ageS = loc?.at ? Math.round((now - new Date(loc.at).getTime()) / 1000) : null;
+  return (
+    <Card tone="brand" testID="en-route">
+      <Text variant="h2">{b.physio?.name?.split(' ')[0] ?? 'Tu fisio'} va en camino</Text>
+      <Text variant="small" testID="eta">{d !== null ? `A ${formatDistance(d)} · llega en unos ${etaMinutes(d)} min` : 'Esperando su ubicación…'}</Text>
+      <PlaceMap testID="tracking-map" center={there ? midpoint(there, home) : home} spanKm={Math.max(0.8, ((d ?? 600) / 1000) * 1.8)} height={240}
+        points={[{ id: 'home', coords: home, kind: 'home', label: 'Tu casa' }, ...(there ? [{ id: 'physio', coords: there, kind: 'physio' as const, label: b.physio?.name?.split(' ')[0] ?? 'Fisio' }] : [])]} />
+      {ageS !== null && ageS > 90 ? <Text variant="tiny" color="warn">Ubicación de hace {Math.round(ageS / 60)} min: puede estar sin señal.</Text> : <Text variant="tiny" muted>Se actualiza sola cada pocos segundos.</Text>}
+    </Card>
   );
 }
 
@@ -150,14 +194,37 @@ function PhysioActions({ b }: { b: Booking }) {
   });
   const start = useAction(b, () => call(() => client.POST('/v1/bookings/{id}/start', { ...path(b), body: b.mode === 'home' ? { pin } : {} })));
   const err = errMsg(accept.error ?? reject.error ?? depart.error ?? arrive.error ?? start.error ?? cancel.error);
+  const [dialog, confirm] = useConfirm();
+  const share = useShareLocation(b.id, b.status === 'en_route');
+  const home = b.mode === 'home' && b.lat !== null && b.lng !== null ? { lat: b.lat, lng: b.lng } : null;
+
+  const askReject = async () => {
+    if (await confirm({ title: '¿Rechazar la solicitud?', message: 'Liberamos el pago del paciente y le sugerimos otros especialistas cerca.', confirm: 'Rechazar', danger: true })) reject.mutate(undefined);
+  };
+  const askCancel = async () => {
+    if (await confirm({ title: '¿Cancelar una cita confirmada?', message: 'Le devolvemos todo al paciente y le damos $5 de crédito. Las cancelaciones bajan tu índice de cumplimiento.', confirm: 'Cancelar cita', cancel: 'Mantenerla', danger: true })) cancel.mutate(undefined);
+  };
 
   return (
     <Stack gap={12}>
+      {dialog}
       {err ? <Notice tone="danger" testID="action-error">{err}</Notice> : null}
+      {home && ['confirmed', 'en_route', 'arrived'].includes(b.status) ? (
+        <Card testID="route-card">
+          <PlaceMap testID="route-map" center={home} spanKm={0.8} height={200} circle={{ center: home, meters: ARRIVAL_RADIUS_M }} points={[{ id: 'home', coords: home, kind: 'home', label: b.patient.name ?? 'Paciente' }]} />
+          <Row>
+            <Button flex small kind="ghost" title="Ir con Google Maps" onPress={() => open(googleMapsUrl(home))} />
+            <Button flex small kind="ghost" title="Ir con Waze" onPress={() => open(wazeUrl(home))} />
+          </Row>
+          {b.status === 'en_route' ? (
+            <Text variant="tiny" muted testID="sharing">{share.error ?? (share.distanceM !== null ? `Compartiendo tu ubicación con el paciente · estás a ${formatDistance(share.distanceM)}` : 'Compartiendo tu ubicación con el paciente…')}</Text>
+          ) : null}
+        </Card>
+      ) : null}
       {b.status === 'pending' ? (
         <Row>
           <Button flex testID="accept" title="Aceptar" loading={accept.isPending} onPress={() => accept.mutate(undefined)} />
-          <Button flex kind="line" testID="reject" title="Rechazar" disabled={accept.isPending} loading={reject.isPending} onPress={() => reject.mutate(undefined)} />
+          <Button flex kind="line" testID="reject" title="Rechazar" disabled={accept.isPending} loading={reject.isPending} onPress={() => { askReject().catch(() => {}); }} />
         </Row>
       ) : null}
 
@@ -186,7 +253,7 @@ function PhysioActions({ b }: { b: Booking }) {
 
       {b.status === 'in_progress' ? <CompleteForm b={b} /> : null}
       {b.status === 'completed' ? <AfterSession b={b} target="patient" /> : null}
-      {['confirmed', 'en_route'].includes(b.status) ? <Button kind="line" title="Cancelar cita" loading={cancel.isPending} onPress={() => cancel.mutate(undefined)} /> : null}
+      {['confirmed', 'en_route'].includes(b.status) ? <Button kind="line" title="Cancelar cita" loading={cancel.isPending} onPress={() => { askCancel().catch(() => {}); }} /> : null}
     </Stack>
   );
 }
@@ -285,6 +352,7 @@ function AfterSession({ b, target }: { b: Booking; target: 'physio' | 'patient' 
 // Botón de ayuda: comparte la ubicación con el equipo de seguridad y ofrece llamar al 911 (ECU 911).
 function Sos({ b }: { b: Booking }) {
   const [sent, setSent] = useState(false);
+  const [dialog, confirm] = useConfirm();
   const sos = useMutation({
     mutationFn: async () => {
       const here = await currentCoords();
@@ -294,11 +362,15 @@ function Sos({ b }: { b: Booking }) {
   });
   return (
     <Card tone="danger">
+      {dialog}
       {sent ? <Text variant="small" testID="sos-sent">Avisamos a nuestro equipo de seguridad con tu ubicación. Te llamarán de inmediato.</Text>
         : <Text variant="small" muted>¿Te sientes en riesgo? Avisamos a seguridad con tu ubicación.</Text>}
       <Row>
-        <Button flex kind="danger" testID="sos" title="Necesito ayuda" loading={sos.isPending} onPress={() => sos.mutate()} />
-        <Button flex kind="line" title="Llamar al 911" onPress={() => { Linking.openURL('tel:911').catch(() => {}); }} />
+        <Button flex kind="danger" testID="sos" title="Necesito ayuda" loading={sos.isPending} onPress={() => {
+          confirm({ title: '¿Activar la alerta?', message: 'Enviamos tu ubicación y los datos de la cita al equipo de seguridad de FisioCerca, que te llamará de inmediato. Si estás en peligro, llama también al 911.', confirm: 'Activar alerta', danger: true })
+            .then(ok => { if (ok) sos.mutate(); }).catch(() => {});
+        }} />
+        <Button flex kind="line" title="Llamar al 911" onPress={() => open('tel:911')} />
       </Row>
       {sos.error ? <Text variant="tiny" color="danger">{errMsg(sos.error)}</Text> : null}
     </Card>

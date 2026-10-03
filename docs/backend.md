@@ -52,10 +52,12 @@ pending ─► confirmed ─► en_route ─► arrived ─► in_progress ─�
 
 | Paso | Regla |
 |---|---|
-| Crear | Exige identidad verificada. Bloquea si hay **señales de alerta** (dolor de pecho, fiebre, pérdida de fuerza…). Pide el dolor o un comentario. La dirección debe estar dentro de la zona del fisio, el horario dentro de su disponibilidad y con al menos 1 hora de anticipación. **Retiene el pago.** |
+| Crear | Exige identidad verificada. Aplica el **triaje de señales de alarma** (ver abajo). Pide el dolor o un comentario. La dirección debe estar dentro de la zona del fisio, el horario dentro de su disponibilidad y con al menos 1 hora de anticipación. **Retiene el pago.** |
+| Triaje | Dos niveles. **Emergencia** (dolor de pecho o falta de aire ahora, debilidad repentina, pérdida del control de la orina o las heces): no se reserva y se indica llamar al 911. **Médico primero** (fiebre con el dolor, caída fuerte reciente): se reserva solo si el paciente confirma que un médico ya lo evaluó; el fisio ve las señales en la cita. Las frases son concretas y con tiempo para que una secuela ya diagnosticada (por ejemplo, de un ACV) no se tome como emergencia. |
 | Familiar | Si el paciente tiene 75 años o más, es menor o no puede firmar, exige un acompañante. Si no puede firmar, el consentimiento lo firma su representante. |
 | Dirección | El fisio la ve solo después de aceptar. Nunca ve el PIN. |
-| «Llegué» | Solo a menos de **150 m** del punto que marcó el paciente. |
+| En camino | La app del fisio envía su ubicación cada ~10 s; el paciente lo ve en el mapa con distancia, tiempo estimado y la hora de la última ubicación. |
+| «Llegué» | Solo a menos de **150 m** del punto que marcó el paciente en el mapa. |
 | Consentimiento | Se firma una vez por paciente y especialista, con el dedo en la app. La firma llega como SVG (trazo vectorial, se rechaza si trae scripts o atributos de eventos) o como PNG. |
 | Iniciar | En visitas a domicilio exige consentimiento firmado, que el paciente confirme el rostro en la puerta y el **PIN** correcto (máximo 5 intentos). |
 | Puerta | Si el paciente dice que la persona no es la del perfil: se cancela la cita, se libera el pago, se **suspende al fisio**, se crea una alerta y un caso de seguridad. |
@@ -86,7 +88,7 @@ pending ─► confirmed ─► en_route ─► arrived ─► in_progress ─�
 | Entrada | Todo se valida con Zod. Las consultas SQL siempre van parametrizadas. El tamaño del cuerpo de la petición está limitado. |
 | Transporte | Cabeceras de seguridad (Helmet: HSTS, nosniff, protección contra frames), CORS con lista de orígenes y límite de peticiones por IP. |
 | Webhooks | Firma HMAC verificada sobre el cuerpo original, con comparación de tiempo constante. |
-| LOPDP | Consentimientos por versión, exportación de datos, eliminación (anonimiza la cuenta y conserva la historia clínica y las facturas por obligación legal) y auditoría de acciones de administración. |
+| LOPDP | Consentimientos por versión, exportación de datos, eliminación desde la app (no se permite con citas activas; anonimiza nombre, teléfono, correo y cédula, y conserva la historia clínica y las facturas por obligación legal) y auditoría de acciones de administración. |
 | Dependencias | `npm audit` en CI. Hoy: 0 vulnerabilidades en producción. |
 
 ## 5. Fiabilidad y contrato
@@ -124,7 +126,7 @@ Esto es lo que no se puede terminar sin contratos o credenciales de terceros. Ca
 3. **SMS real** (`src/providers/sms.ts`).
 4. **Almacenamiento de archivos**: fotos de cédula, selfies y PDF de documentos, con URLs firmadas de subida en S3 o Google Cloud Storage. Hoy la API recibe referencias (`fileKey`, `frontRef`).
 5. **Notificaciones push** (Firebase): el punto de conexión está en `notify()`, en `src/context.ts`.
-6. **Ubicación en tiempo real**: hoy `POST /bookings/:id/location` funciona por consulta periódica. Para el mapa en vivo, conviene sumar WebSockets o Server-Sent Events.
+6. **Ubicación en tiempo real**: el seguimiento ya funciona con envío cada ~10 s y consulta cada 5 s. Para más fluidez y menos consumo, conviene WebSockets o Server-Sent Events, y permiso de ubicación en segundo plano para seguir con la pantalla apagada.
 7. **Videollamada**: integrar un proveedor (Daily, Twilio Video o Agora) que entregue la sala al iniciar la cita.
 8. **Recordatorios por push**: las tareas programadas ya crean las notificaciones; falta enviarlas por Firebase (ver punto 5).
 9. **Infraestructura**: PostgreSQL administrado con respaldos diarios y réplica (AWS RDS, Google Cloud SQL o Supabase), secretos en un gestor de secretos, monitoreo de errores (Sentry) y logs centralizados.

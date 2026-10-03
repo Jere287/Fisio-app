@@ -135,3 +135,22 @@ describe('Contrato de respuestas', () => {
     expect((await p.get(`/v1/bookings/${r.body.id}`)).body.reviewed).toBe(false);
   });
 });
+
+describe('Eliminar la cuenta', () => {
+  it('no se puede con citas activas y, sin ellas, anonimiza la cuenta', async () => {
+    const u = await verifiedUser(env);
+    const pid = (await api(env, u.token).get('/v1/patients')).body[0].id;
+    const r = await env.app.inject({ method: 'POST', url: '/v1/bookings', headers: { authorization: `Bearer ${u.token}` },
+      payload: { physioId: physio.userId, patientId: pid, mode: 'video', scheduledAt: at(15, 13), pain: { zones: ['Cuello'] } } });
+    expect(r.statusCode).toBe(201);
+    const blocked = await api(env, u.token).post('/v1/me/delete');
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.error.code).toBe('active_bookings');
+    await api(env, u.token).post(`/v1/bookings/${JSON.parse(r.body).id}/cancel`, {});
+    expect((await api(env, u.token).post('/v1/me/delete')).status).toBe(200);
+    const row = await env.ctx.db.query('SELECT full_name, phone, deleted_at FROM users WHERE id = $1', [u.userId]);
+    expect(row.rows[0].full_name).toBeNull();
+    expect(row.rows[0].phone.startsWith('deleted:')).toBe(true);
+    expect(row.rows[0].deleted_at).not.toBeNull();
+  });
+});

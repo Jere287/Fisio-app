@@ -20,14 +20,30 @@ export const SPECIALTIES: { value: NonNullable<Specialty>; label: string }[] = [
 ];
 export const specialtyLabel = (v: string) => SPECIALTIES.find(s => s.value === v)?.label ?? v;
 
-// Señales de alerta: si alguna está presente, la fisioterapia no es lo indicado y se deriva a emergencias o al médico.
+// Señales de alarma con triaje en dos niveles (igual que el backend):
+// - emergency: posible infarto, ACV o compresión de la médula. No se reserva: 911 o emergencias.
+// - medical: posible infección o fractura. Se reserva solo si un médico ya lo evaluó y autorizó fisioterapia.
+// Las frases son concretas y con tiempo («ahora», «de repente», «en los últimos días») para que una
+// secuela antigua, como la debilidad después de un ACV ya tratado, no se confunda con una emergencia.
 export const RED_FLAGS = [
-  { value: 'chest_pain_or_breathless', label: 'Dolor en el pecho o falta de aire' },
-  { value: 'fever', label: 'Fiebre o escalofríos junto con el dolor' },
-  { value: 'sudden_weakness', label: 'Pérdida repentina de fuerza o sensibilidad en un brazo o una pierna' },
-  { value: 'incontinence', label: 'Pérdida del control de la orina o las heces' },
-  { value: 'major_trauma', label: 'Caída o golpe fuerte reciente con deformidad o hinchazón grande' },
+  { value: 'chest_pain_or_breathless', tier: 'emergency', label: 'Dolor en el pecho o falta de aire ahora mismo' },
+  { value: 'sudden_weakness', tier: 'emergency', label: 'Debilidad, adormecimiento o cara caída que empezó de repente', hint: 'Si es una secuela ya diagnosticada (por ejemplo, de un ACV), no la marques.' },
+  { value: 'incontinence', tier: 'emergency', label: 'Perdiste el control de la orina o las heces desde que empezó el dolor de espalda' },
+  { value: 'fever', tier: 'medical', label: 'Fiebre o escalofríos junto con el dolor' },
+  { value: 'major_trauma', tier: 'medical', label: 'Caída o golpe fuerte en los últimos días, con deformidad, mucha hinchazón o sin poder apoyar' },
 ] as const;
+export type RedFlag = (typeof RED_FLAGS)[number]['value'];
+export const flagLabel = (v: string) => RED_FLAGS.find(f => f.value === v)?.label ?? v;
+
+export type Triage = { answer: 'no' | 'yes' | null; flags: RedFlag[]; clearance: boolean };
+export const EMPTY_TRIAGE: Triage = { answer: null, flags: [], clearance: false };
+// Resultado del triaje: si se puede reservar y por qué no.
+export function triageOutcome(t: Triage): 'unanswered' | 'clear' | 'emergency' | 'needs_clearance' {
+  if (t.answer === null || (t.answer === 'yes' && t.flags.length === 0)) return 'unanswered';
+  if (t.answer === 'no') return 'clear';
+  if (t.flags.some(f => RED_FLAGS.find(x => x.value === f)?.tier === 'emergency')) return 'emergency';
+  return t.clearance ? 'clear' : 'needs_clearance';
+}
 
 export const PAIN = {
   zones: ['Cuello', 'Hombro', 'Espalda alta', 'Espalda baja', 'Codo o muñeca', 'Mano', 'Cadera', 'Rodilla', 'Tobillo o pie', 'Otra zona'],

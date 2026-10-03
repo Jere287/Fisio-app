@@ -31,7 +31,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "FisioCerca usa tu ubicación para mostrarte especialistas cerca y para confirmar la llegada del fisio a tu puerta."
+          "locationWhenInUsePermission": "FisioCerca usa tu ubicación para mostrarte especialistas cerca, marcar la puerta de tu casa y, si eres fisio, mostrarle al paciente que vas en camino."
         }
       ],
       [

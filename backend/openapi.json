@@ -493,7 +493,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
           }
         }
       }
@@ -2156,17 +2172,22 @@
                   },
                   "redFlags": {
                     "default": [],
+                    "maxItems": 5,
                     "type": "array",
                     "items": {
                       "type": "string",
                       "enum": [
                         "chest_pain_or_breathless",
-                        "fever",
                         "sudden_weakness",
                         "incontinence",
+                        "fever",
                         "major_trauma"
                       ]
                     }
+                  },
+                  "medicalClearance": {
+                    "default": false,
+                    "type": "boolean"
                   },
                   "pain": {
                     "default": {
@@ -2326,6 +2347,15 @@
                     "reviewed": {
                       "type": "boolean"
                     },
+                    "redFlags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "medicalClearance": {
+                      "type": "boolean"
+                    },
                     "patient": {
                       "type": "object",
                       "properties": {
@@ -2401,11 +2431,17 @@
                         "lng": {
                           "nullable": true,
                           "type": "number"
+                        },
+                        "at": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time"
                         }
                       },
                       "required": [
                         "lat",
-                        "lng"
+                        "lng",
+                        "at"
                       ],
                       "additionalProperties": false
                     },
@@ -2443,6 +2479,8 @@
                     "consentSigned",
                     "doorConfirmed",
                     "reviewed",
+                    "redFlags",
+                    "medicalClearance",
                     "patient",
                     "companion",
                     "companionName",
@@ -2577,6 +2615,15 @@
                       "reviewed": {
                         "type": "boolean"
                       },
+                      "redFlags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "medicalClearance": {
+                        "type": "boolean"
+                      },
                       "patient": {
                         "type": "object",
                         "properties": {
@@ -2652,11 +2699,17 @@
                           "lng": {
                             "nullable": true,
                             "type": "number"
+                          },
+                          "at": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time"
                           }
                         },
                         "required": [
                           "lat",
-                          "lng"
+                          "lng",
+                          "at"
                         ],
                         "additionalProperties": false
                       },
@@ -2694,6 +2747,8 @@
                       "consentSigned",
                       "doorConfirmed",
                       "reviewed",
+                      "redFlags",
+                      "medicalClearance",
                       "patient",
                       "companion",
                       "companionName",
@@ -2804,6 +2859,15 @@
                     "reviewed": {
                       "type": "boolean"
                     },
+                    "redFlags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "medicalClearance": {
+                      "type": "boolean"
+                    },
                     "patient": {
                       "type": "object",
                       "properties": {
@@ -2879,11 +2943,17 @@
                         "lng": {
                           "nullable": true,
                           "type": "number"
+                        },
+                        "at": {
+                          "nullable": true,
+                          "type": "string",
+                          "format": "date-time"
                         }
                       },
                       "required": [
                         "lat",
-                        "lng"
+                        "lng",
+                        "at"
                       ],
                       "additionalProperties": false
                     },
@@ -2921,6 +2991,8 @@
                     "consentSigned",
                     "doorConfirmed",
                     "reviewed",
+                    "redFlags",
+                    "medicalClearance",
                     "patient",
                     "companion",
                     "companionName",
@@ -2980,7 +3052,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
           }
         }
       }
@@ -3005,7 +3093,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
           }
         }
       }
@@ -3030,7 +3134,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
           }
         }
       }
@@ -3077,7 +3197,27 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "distanceM": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "distanceM"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
           }
         }
       }
@@ -3124,7 +3264,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
           }
         }
       }
@@ -3243,7 +3399,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
           }
         }
       }
@@ -3302,7 +3474,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
           }
         }
       }
@@ -3345,7 +3533,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
           }
         }
       }
@@ -3370,7 +3574,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Default Response"
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": {}
+                }
+              }
+            }
           }
         }
       }

@@ -5,12 +5,13 @@ import { call, client, newIdempotencyKey } from '@/api/client';
 import { keys, useMe, usePatients, usePhysio } from '@/api/queries';
 import type { CreateBooking } from '@/api/types';
 import { dateTime, money } from '@/lib/format';
-import { PAIN, RED_FLAGS } from '@/lib/labels';
-import { currentCoords, QUITO_DEFAULT, type Coords } from '@/lib/useLocation';
+import { EMPTY_TRIAGE, PAIN, triageOutcome, type Triage } from '@/lib/labels';
+import { TriageCard } from '@/features/TriageCard';
+import { addressFrom, currentCoords, QUITO_DEFAULT, type Coords } from '@/lib/useLocation';
+import { PlaceMap } from '@/ui/map';
 import { Button, Card, Chip, ErrorState, Field, Loading, Notice, Row, Screen, Stack, Text } from '@/ui';
 
 const SERVICE_FEE = 99;
-type Flag = (typeof RED_FLAGS)[number]['value'];
 
 export default function Book() {
   const { physioId, scheduledAt, mode } = useLocalSearchParams<{ physioId: string; scheduledAt: string; mode: 'home' | 'video' }>();
@@ -22,7 +23,7 @@ export default function Book() {
 
   const [patientId, setPatientId] = useState<string | undefined>();
   const [companion, setCompanion] = useState<'booker' | 'other' | 'none'>('booker');
-  const [flags, setFlags] = useState<Flag[]>([]);
+  const [triage, setTriage] = useState<Triage>(EMPTY_TRIAGE);
   const [pain, setPain] = useState({ zones: [] as string[], since: undefined as string | undefined, types: [] as string[], worse: [] as string[], history: '' });
   const [painScore, setPainScore] = useState<number | undefined>();
   const [comments, setComments] = useState('');
@@ -39,12 +40,12 @@ export default function Book() {
   const credit = Math.min(me.data?.user.credit_cents ?? 0, price + SERVICE_FEE);
   const total = price + SERVICE_FEE - credit;
 
-  const ready = useMemo(() => !flags.length && (pain.zones.length > 0 || comments.trim().length > 4) && (mode === 'video' || (address.trim().length >= 5 && coords)), [flags, pain.zones, comments, mode, address, coords]);
+  const ready = useMemo(() => triageOutcome(triage) === 'clear' && (pain.zones.length > 0 || comments.trim().length > 4) && (mode === 'video' || (address.trim().length >= 5 && coords)), [triage, pain.zones, comments, mode, address, coords]);
 
   const create = useMutation({
     mutationFn: () => {
       const body: CreateBooking = {
-        physioId, patientId: selectedId!, mode, scheduledAt, redFlags: [], painScore, comments: comments || undefined,
+        physioId, patientId: selectedId!, mode, scheduledAt, redFlags: triage.flags, medicalClearance: triage.clearance, painScore, comments: comments || undefined,
         pain: { zones: pain.zones, since: pain.since, types: pain.types, worse: pain.worse, history: pain.history || undefined },
         ...(isThird ? { companion } : {}),
         ...(mode === 'home' ? { address, lat: coords!.lat, lng: coords!.lng } : {}),
@@ -57,11 +58,17 @@ export default function Book() {
     },
   });
 
+  const [gpsCenter, setGpsCenter] = useState<Coords>(QUITO_DEFAULT);
   const locate = async () => {
     setLocating(true);
-    const c = await currentCoords();
-    setCoords(c ?? QUITO_DEFAULT);
+    const c = (await currentCoords()) ?? QUITO_DEFAULT;
+    setCoords(c);
+    setGpsCenter(c);
     setLocating(false);
+    if (!address.trim()) {
+      const a = await addressFrom(c);
+      if (a) setAddress(a);
+    }
   };
 
   if (physio.isPending || patients.isPending) return <Screen><Loading /></Screen>;
@@ -91,12 +98,6 @@ export default function Book() {
       ) : null}
 
       <Card>
-        <Text variant="label">Antes de reservar: ¿hay alguno de estos síntomas?</Text>
-        {RED_FLAGS.map(f => <Chip key={f.value} testID={`flag-${f.value}`} label={f.label} selected={flags.includes(f.value)} onPress={() => setFlags(x => (x.includes(f.value) ? x.filter(y => y !== f.value) : [...x, f.value]))} />)}
-        {flags.length ? <Notice tone="danger" testID="red-flag-notice">La fisioterapia no es lo indicado ahora. Estos síntomas necesitan atención médica: llama al 911 o acude a emergencias.</Notice> : null}
-      </Card>
-
-      <Card>
         <Text variant="h2">Cuéntanos del dolor</Text>
         <Text variant="label">¿Dónde duele?</Text>
         <Row>{PAIN.zones.map(z => <Chip key={z} testID={`zone-${z}`} label={z} selected={pain.zones.includes(z)} onPress={() => setPain(p => ({ ...p, zones: toggle(p.zones, z) }))} />)}</Row>
@@ -112,13 +113,17 @@ export default function Book() {
         <Field label="Cirugías, enfermedades o medicamentos (opcional)" value={pain.history} onChangeText={v => setPain(p => ({ ...p, history: v }))} />
       </Card>
 
+      <TriageCard value={triage} onChange={setTriage} />
+
       {mode === 'home' ? (
         <Card>
           <Field label="Dirección de la visita" testID="address" value={address} onChangeText={setAddress} placeholder="Calle, número, edificio, piso" hint="Solo el especialista que acepte verá la dirección exacta." />
           <Row style={{ justifyContent: 'space-between' }}>
-            <Text variant="small" muted>{coords ? `Ubicación fijada (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})` : 'Fija el punto exacto de tu puerta.'}</Text>
-            <Button small kind="ghost" testID="use-location" title={coords ? 'Actualizar' : 'Usar mi ubicación'} loading={locating} onPress={() => { locate().catch(() => {}); }} />
+            <Text variant="label">{coords ? 'Punto de tu puerta' : '¿Dónde es la visita?'}</Text>
+            <Button small kind="ghost" testID="use-location" title={coords ? 'Volver a mi ubicación' : 'Usar mi ubicación'} loading={locating} onPress={() => { locate().catch(() => {}); }} />
           </Row>
+          <PlaceMap testID="book-map" center={gpsCenter} spanKm={0.8} pin={coords} onPinChange={setCoords} height={230} />
+          <Text variant="tiny" muted>{coords ? 'Toca el mapa o arrastra el punto hasta tu entrada. El fisio solo podrá marcar «Llegué» a menos de 150 m de aquí.' : 'Toca el mapa donde está tu entrada o usa tu ubicación.'}</Text>
         </Card>
       ) : null}
 
@@ -128,6 +133,7 @@ export default function Book() {
         {credit ? <Row style={{ justifyContent: 'space-between' }}><Text color="ok">Crédito FisioCerca</Text><Text color="ok">−{money(credit)}</Text></Row> : null}
         <Row style={{ justifyContent: 'space-between' }}><Text variant="label">Total</Text><Text variant="label">{money(total)}</Text></Row>
         <Text variant="tiny" muted>Solo retenemos el valor; se cobra al terminar la sesión. Cancelación gratis hasta 12 horas antes. Si tu fisio no llega, te devolvemos el 100%.</Text>
+        <Button small kind="line" title="Ver garantías" onPress={() => router.push('/help')} />
       </Card>
 
       <Button testID="confirm-booking" title={`Solicitar a ${physio.data.full_name?.split(' ')[0] ?? 'el especialista'}`} disabled={!ready} loading={create.isPending} onPress={() => create.mutate()} />

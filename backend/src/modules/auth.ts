@@ -6,7 +6,7 @@ import * as S from '../schemas.js';
 import { audit } from '../context.js';
 import { many, one, withTx, type Queryable } from '../db/pool.js';
 import { hmac, randomDigits, randomToken, safeEqual } from '../lib/crypto.js';
-import { badRequest, tooMany, unauthorized } from '../lib/errors.js';
+import { badRequest, conflict, tooMany, unauthorized } from '../lib/errors.js';
 import { normalizePhone } from '../lib/ecuador.js';
 import { authGuard, type Role } from '../plugins/auth.js';
 
@@ -159,9 +159,13 @@ export async function authRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // Derecho de eliminación: se anonimiza la cuenta. La historia clínica y las facturas se conservan lo que exige la ley.
-  r.post('/v1/me/delete', { schema: { tags: ['me'] }, preHandler: auth }, async (req) => {
+  // No se puede eliminar con citas en curso: hay dinero retenido y alguien esperando la visita.
+  r.post('/v1/me/delete', { schema: { tags: ['me'], response: { 200: S.Ok } }, preHandler: auth }, async (req) => {
     await withTx(ctx.db, async tx => {
-      await tx.query(`UPDATE users SET deleted_at = now(), phone = 'deleted:' || id, email = NULL, cedula_enc = NULL WHERE id = $1`, [req.auth.id]);
+      const active = await one<{ n: number }>(tx, `SELECT count(*) AS n FROM bookings WHERE (booked_by = $1 OR physio_id = $1) AND status IN ('pending', 'confirmed', 'en_route', 'arrived', 'in_progress')`, [req.auth.id]);
+      if ((active?.n ?? 0) > 0) throw conflict('active_bookings', 'Tienes citas pendientes o en curso. Cancélalas o espera a que terminen para eliminar tu cuenta.');
+      await tx.query(`UPDATE users SET deleted_at = $2, phone = 'deleted:' || id, email = NULL, full_name = NULL, cedula_enc = NULL WHERE id = $1`, [req.auth.id, ctx.now()]);
+      await tx.query('UPDATE physios SET available = false WHERE user_id = $1', [req.auth.id]);
       await tx.query('UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [req.auth.id]);
       await audit(tx, req.auth.id, 'me.delete', req.auth.id);
     });

@@ -31,3 +31,14 @@ export function useCoords() {
   }, []);
   return { coords, precise, refresh };
 }
+
+// Dirección aproximada a partir del GPS, para no obligar a escribirla. En web no existe este servicio: devuelve null.
+export async function addressFrom(c: Coords): Promise<string | null> {
+  try {
+    const [a] = await Location.reverseGeocodeAsync({ latitude: c.lat, longitude: c.lng });
+    if (!a) return null;
+    return [a.street && a.streetNumber ? `${a.street} ${a.streetNumber}` : a.street ?? a.name, a.district ?? a.subregion].filter(Boolean).join(', ') || null;
+  } catch {
+    return null;
+  }
+}

@@ -29,6 +29,7 @@ export default function RootLayout() {
             <Stack.Screen name="physio/[id]" options={{ title: 'Especialista' }} />
             <Stack.Screen name="book" options={{ title: 'Reservar' }} />
             <Stack.Screen name="booking/[id]" options={{ title: 'Tu cita' }} />
+            <Stack.Screen name="help" options={{ title: 'Ayuda' }} />
           </Stack>
         </AuthProvider>
       </QueryClientProvider>

@@ -57,12 +57,13 @@ export const Booking = z.object({
   pain: z.record(z.string(), z.unknown()), painScore: z.number().nullable(), comments: z.string().nullable(),
   priceCents: z.number(), feeCents: z.number(), creditCents: z.number(), totalCents: z.number(), usesPackage: z.boolean(),
   consentSigned: z.boolean(), doorConfirmed: z.boolean(), reviewed: z.boolean(),
+  redFlags: z.array(z.string()), medicalClearance: z.boolean(),
   patient: z.object({ name: z.string().optional(), relationship: z.string().optional(), age: z.number().nullable(), canConsent: z.boolean().optional() }),
   companion: z.string().nullable(), companionName: z.string().nullable(),
   address: z.string().nullable(), lat: z.number().nullable(), lng: z.number().nullable(),
   physio: z.object({ id: z.uuid(), name: z.string().nullable().optional() }).optional(),
   pin: z.string().nullable().optional(),
-  physioLocation: z.object({ lat: z.number().nullable(), lng: z.number().nullable() }).nullable().optional(),
+  physioLocation: z.object({ lat: z.number().nullable(), lng: z.number().nullable(), at: isoDate.nullable() }).nullable().optional(),
   bookedBy: z.object({ name: z.string(), verified: z.boolean() }).optional(),
 });
 

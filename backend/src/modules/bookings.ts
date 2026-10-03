@@ -6,7 +6,7 @@ import * as S from '../schemas.js';
 import { audit, notify, notifyAdmins } from '../context.js';
 import { many, one, withTx, type Queryable, type Tx } from '../db/pool.js';
 import { randomDigits, safeEqual, sha256 } from '../lib/crypto.js';
-import { RED_FLAGS } from '../lib/ecuador.js';
+import { RED_FLAGS, isEmergencyFlag } from '../lib/ecuador.js';
 import { AppError, conflict, forbidden, notFound, unprocessable } from '../lib/errors.js';
 import { ARRIVAL_RADIUS_M, distanceMeters } from '../lib/geo.js';
 import { LATE_CANCEL_HOURS, LATE_CANCEL_RATE, NO_SHOW_CREDIT_CENTS, quote } from '../lib/pricing.js';
@@ -22,7 +22,7 @@ export interface BookingRow extends BookingMoney {
   patient_id: string; mode: 'home' | 'video'; status: Status; scheduled_at: Date; ends_at: Date; duration_min: number;
   address_enc: string | null; lat: number | null; lng: number | null; pain: Record<string, unknown>; pain_score: number | null; comments_enc: string | null;
   companion: string | null; companion_name: string | null; pin_enc: string; pin_attempts: number; physio_lat: number | null; physio_lng: number | null;
-  door_confirmed_at: Date | null; started_at: Date | null; completed_at: Date | null; cancelled_at: Date | null; cancel_reason: string | null; created_at: Date;
+  red_flags: string[]; medical_clearance: boolean; physio_location_at: Date | null; door_confirmed_at: Date | null; started_at: Date | null; completed_at: Date | null; cancelled_at: Date | null; cancel_reason: string | null; created_at: Date;
 }
 
 const ACTIVE: Status[] = ['pending', 'confirmed', 'en_route', 'arrived', 'in_progress'];
@@ -80,13 +80,13 @@ async function view(ctx: AppContext, q: Queryable, b: BookingRow, viewer: 'patie
     id: b.id, mode: b.mode, status: b.status, scheduledAt: b.scheduled_at, durationMin: b.duration_min,
     pain: b.pain, painScore: b.pain_score, comments: ctx.cipher.decryptOpt(b.comments_enc),
     priceCents: b.price_cents, feeCents: b.fee_cents, creditCents: b.credit_cents, totalCents: b.total_cents, usesPackage: !!b.package_id,
-    consentSigned: !!consent, doorConfirmed: !!b.door_confirmed_at, reviewed,
+    consentSigned: !!consent, doorConfirmed: !!b.door_confirmed_at, reviewed, redFlags: b.red_flags, medicalClearance: b.medical_clearance,
     patient: { name: viewer === 'physio' ? short(patient?.full_name) : patient?.full_name, relationship: patient?.relationship, age: patient?.birth_year ? ctx.now().getUTCFullYear() - patient.birth_year : null, canConsent: patient?.can_consent },
     companion: b.companion, companionName: b.companion_name,
   };
   if (viewer === 'patient') {
     return { ...base, address: ctx.cipher.decryptOpt(b.address_enc), lat: b.lat, lng: b.lng, physio: { id: b.physio_id, name: physio?.full_name }, pin: b.mode === 'home' ? ctx.cipher.decrypt(b.pin_enc) : null,
-      physioLocation: b.status === 'en_route' && b.physio_lat != null ? { lat: b.physio_lat, lng: b.physio_lng } : null };
+      physioLocation: b.status === 'en_route' && b.physio_lat != null ? { lat: b.physio_lat, lng: b.physio_lng, at: b.physio_location_at } : null };
   }
   const showAddress = b.status !== 'pending';
   return { ...base, address: showAddress ? ctx.cipher.decryptOpt(b.address_enc) : null, lat: showAddress ? b.lat : null, lng: showAddress ? b.lng : null,
@@ -106,7 +106,8 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
       body: z.object({
         physioId: z.string().uuid(), patientId: z.string().uuid(), mode: z.enum(['home', 'video']), scheduledAt: z.string().datetime(),
         address: z.string().min(5).max(300).optional(), lat: z.number().optional(), lng: z.number().optional(),
-        redFlags: z.array(z.enum(RED_FLAGS)).default([]),
+        redFlags: z.array(z.enum(RED_FLAGS)).max(RED_FLAGS.length).default([]),
+        medicalClearance: z.boolean().default(false),
         pain: z.object({ zones: z.array(z.string().max(40)).max(10).default([]), since: z.string().max(40).optional(), types: z.array(z.string().max(40)).max(10).default([]), worse: z.array(z.string().max(40)).max(10).default([]), history: z.string().max(500).optional() }).default({ zones: [], types: [], worse: [] }),
         painScore: z.number().int().min(0).max(10).optional(),
         comments: z.string().max(2000).optional(),
@@ -120,8 +121,12 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
     onSend: idem.onSend,
   }, async (req, reply) => {
     const b = req.body;
-    if (b.redFlags.length) {
-      throw unprocessable('red_flags', 'La fisioterapia no es lo indicado ahora. Estos síntomas necesitan atención médica: llama al 911 o acude a emergencias.', { redFlags: b.redFlags });
+    const redFlags = [...new Set(b.redFlags)];
+    if (redFlags.some(isEmergencyFlag)) {
+      throw unprocessable('red_flags_emergency', 'Estos síntomas pueden ser una emergencia: llama al 911 o acude a emergencias ahora.', { redFlags });
+    }
+    if (redFlags.length && !b.medicalClearance) {
+      throw unprocessable('red_flags_medical', 'Antes de la fisioterapia, un médico debe revisar estos síntomas. Si ya te evaluó y te indicó fisioterapia, confírmalo para continuar.', { redFlags });
     }
     if (!b.pain.zones.length && !(b.comments && b.comments.trim().length > 4)) throw unprocessable('pain_required', 'Cuéntanos dónde te duele o describe tu dolor.');
     const patient = await ownPatient(ctx.db, req.auth.id, b.patientId);
@@ -160,11 +165,11 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
       const qt = quote(b.mode === 'home' ? physio.price_cents : physio.video_price_cents, user!.credit_cents, !!packageId);
       if (qt.creditCents) await tx.query('UPDATE users SET credit_cents = credit_cents - $2 WHERE id = $1', [req.auth.id, qt.creditCents]);
       const row = await one<BookingRow>(tx, `INSERT INTO bookings (booked_by, patient_id, physio_id, mode, scheduled_at, duration_min, ends_at, address_enc, lat, lng, pain, pain_score, comments_enc,
-          companion, companion_name, price_cents, fee_cents, credit_cents, package_id, total_cents, pin_enc, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) RETURNING *`,
+          companion, companion_name, price_cents, fee_cents, credit_cents, package_id, total_cents, pin_enc, created_at, red_flags, medical_clearance)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) RETURNING *`,
         [req.auth.id, patient.id, b.physioId, b.mode, start, dur, end, ctx.cipher.encryptOpt(b.mode === 'home' ? b.address : null), b.mode === 'home' ? b.lat : null, b.mode === 'home' ? b.lng : null,
           b.pain, b.painScore ?? null, ctx.cipher.encryptOpt(b.comments), isThird ? b.companion ?? null : null, b.companionName ?? null,
-          qt.priceCents, qt.feeCents, qt.creditCents, packageId, qt.totalCents, ctx.cipher.encrypt(randomDigits(4)), ctx.now()]);
+          qt.priceCents, qt.feeCents, qt.creditCents, packageId, qt.totalCents, ctx.cipher.encrypt(randomDigits(4)), ctx.now(), redFlags, redFlags.length > 0]);
       await authorizeBooking(ctx, tx, row!);
       await tx.query(`INSERT INTO booking_events (booking_id, actor_id, type) VALUES ($1, $2, 'created')`, [row!.id, req.auth.id]);
       await notify(tx, b.physioId, `Nueva solicitud${b.mode === 'video' ? ' por videollamada' : ''}. Tienes 30 minutos para responder.`, { bookingId: row!.id });
@@ -198,8 +203,8 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   // ---------- Acciones del fisio ----------
-  const physioAction = (path: string, summary: string, handler: (tx: Tx, b: BookingRow, req: any) => Promise<unknown>, body?: z.ZodTypeAny) =>
-    r.post(`/v1/bookings/:id/${path}`, { schema: { tags: ['bookings'], summary, params: idParam, ...(body ? { body } : {}) }, preHandler: auth }, async (req) => {
+  const physioAction = (path: string, summary: string, handler: (tx: Tx, b: BookingRow, req: any) => Promise<unknown>, body?: z.ZodTypeAny, response: z.ZodTypeAny = S.Ok) =>
+    r.post(`/v1/bookings/:id/${path}`, { schema: { tags: ['bookings'], summary, params: idParam, ...(body ? { body } : {}), response: { 200: response } }, preHandler: auth }, async (req) => {
       const out = await withTx(ctx.db, async tx => { const b = await lockBooking(tx, req.params.id); asPhysio(b, req.auth.id); return handler(tx, b, req); });
       return out ?? { ok: true };
     });
@@ -218,9 +223,9 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
 
   physioAction('location', 'Enviar ubicación en vivo', async (tx, b, req) => {
     if (!['en_route', 'arrived', 'in_progress'].includes(b.status)) throw conflict('invalid_state', 'Solo se comparte la ubicación durante la cita.');
-    await tx.query('UPDATE bookings SET physio_lat = $2, physio_lng = $3 WHERE id = $1', [b.id, req.body.lat, req.body.lng]);
-    return { distanceM: Math.round(distanceMeters(req.body, { lat: b.lat!, lng: b.lng! })) };
-  }, z.object({ lat: z.number(), lng: z.number() }));
+    await tx.query('UPDATE bookings SET physio_lat = $2, physio_lng = $3, physio_location_at = $4 WHERE id = $1', [b.id, req.body.lat, req.body.lng, ctx.now()]);
+    return { ok: true, distanceM: Math.round(distanceMeters(req.body, { lat: b.lat!, lng: b.lng! })) };
+  }, z.object({ lat: z.number(), lng: z.number() }), z.object({ ok: z.boolean(), distanceM: z.number() }));
 
   // «Llegué» solo dentro de 150 m del punto que marcó el paciente.
   physioAction('arrive', 'Marcar llegada (geocerca)', async (tx, b, req) => {
@@ -278,8 +283,8 @@ export async function bookingRoutes(app: FastifyInstance, ctx: AppContext) {
   }));
 
   // ---------- Acciones del paciente ----------
-  const patientAction = (path: string, summary: string, handler: (tx: Tx, b: BookingRow, req: any) => Promise<unknown>, body?: z.ZodTypeAny) =>
-    r.post(`/v1/bookings/:id/${path}`, { schema: { tags: ['bookings'], summary, params: idParam, ...(body ? { body } : {}) }, preHandler: auth }, async (req) => {
+  const patientAction = (path: string, summary: string, handler: (tx: Tx, b: BookingRow, req: any) => Promise<unknown>, body?: z.ZodTypeAny, response: z.ZodTypeAny = S.Ok) =>
+    r.post(`/v1/bookings/:id/${path}`, { schema: { tags: ['bookings'], summary, params: idParam, ...(body ? { body } : {}), response: { 200: response } }, preHandler: auth }, async (req) => {
       const out = await withTx(ctx.db, async tx => { const b = await lockBooking(tx, req.params.id); asPatient(b, req.auth.id); return handler(tx, b, req); });
       return out ?? { ok: true };
     });

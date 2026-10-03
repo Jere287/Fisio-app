@@ -1,6 +1,7 @@
 // Prueba de punta a punta del flujo principal con dos personas a la vez (paciente y fisio).
 // Requiere: backend en marcha con datos de ejemplo y SMS_PROVIDER=console (el código se lee de su log),
 // y la app exportada para web servida en APP_URL. Ver mobile/README.md.
+const { Buffer } = require('node:buffer');
 const { chromium } = require('playwright');
 const fs = require('fs');
 const URL = process.env.APP_URL ?? 'http://localhost:8099';
@@ -8,6 +9,9 @@ const API_LOG = process.env.API_LOG ?? 'api.log';
 const OUT = process.env.SHOTS_DIR ?? 'e2e/capturas';
 fs.mkdirSync(OUT, { recursive: true });
 const HOME = { latitude: -0.2046, longitude: -78.4876 }; // a ~50 m de Andrea Salazar
+const FAR = { latitude: -0.2120, longitude: -78.4950 };  // el fisio sale a ~1 km
+// Los mapas no tienen internet en CI: cada mosaico se sustituye por una imagen vacía.
+const TILE = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==', 'base64');
 const T = s => `[data-testid="${s}"]`;
 const shot = (p, n) => p.screenshot({ path: `${OUT}/${n}.png`, fullPage: true });
 
@@ -27,8 +31,12 @@ async function login(p, local, intl) {
 
 (async () => {
   const browser = await chromium.launch();
-  const mk = async () => (await browser.newContext({ viewport: { width: 390, height: 844 }, geolocation: HOME, permissions: ['geolocation'], locale: 'es-EC' })).newPage();
-  const pat = await mk(), fis = await mk();
+  const mk = async geo => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, geolocation: geo, permissions: ['geolocation'], locale: 'es-EC' });
+    await ctx.route(/tile\.openstreetmap\.org/, r => r.fulfill({ contentType: 'image/png', body: TILE }));
+    return ctx.newPage();
+  };
+  const pat = await mk(HOME), fis = await mk(FAR);
   for (const p of [pat, fis]) p.on('pageerror', e => console.log('PAGEERROR', e.message));
 
   // Paciente: entra, busca y reserva
@@ -36,6 +44,11 @@ async function login(p, local, intl) {
   await pat.locator(T('explore-screen')).waitFor();
   await pat.waitForTimeout(1500);
   await shot(pat, '01-explore');
+  await pat.locator(T('view-map')).click();
+  await pat.locator(`${T('explore-map')} .leaflet-marker-icon`).first().waitFor();
+  console.log('Paciente: mapa con', await pat.locator(`${T('explore-map')} .leaflet-marker-icon`).count(), 'puntos (tú + especialistas)');
+  await shot(pat, '01b-mapa');
+  await pat.locator(T('view-list')).click();
   await pat.locator('[data-testid^="physio-"]', { hasText: 'Andrea' }).first().click();
   await pat.locator(T('day-2026-10-05')).click();
   await pat.locator('[data-testid^="slot-"]').first().waitFor();
@@ -46,7 +59,21 @@ async function login(p, local, intl) {
   await pat.locator(T('comments')).fill('Me duele al subir gradas desde hace dos semanas');
   await pat.locator(T('address')).fill('Av. Amazonas N34-120 y Atahualpa, edificio Torre Azul, piso 3');
   await pat.locator(T('use-location')).click();
-  await pat.waitForTimeout(800);
+  await pat.locator(`${T('book-map')} .leaflet-marker-draggable`).waitFor();
+
+  // Triaje: una emergencia bloquea; «Me equivoqué» lo deshace; «No, ninguna» permite seguir.
+  await pat.locator(T('triage-yes')).click();
+  await pat.locator(T('flag-chest_pain_or_breathless')).click();
+  await pat.locator(T('triage-emergency')).waitFor();
+  if (!(await pat.locator(T('confirm-booking')).isDisabled())) throw new Error('Una emergencia no debería poder reservarse');
+  await shot(pat, '03a-triaje-emergencia');
+  await pat.getByText('Me equivoqué').click();
+  await pat.locator(T('triage-yes')).click();
+  await pat.locator(T('flag-major_trauma')).click();
+  await pat.locator(T('triage-medical')).waitFor();
+  if (!(await pat.locator(T('confirm-booking')).isDisabled())) throw new Error('Sin autorización médica no debería poder reservarse');
+  await pat.locator(T('triage-no')).click();
+  console.log('Paciente: triaje de emergencia y de médico primero funcionan');
   await shot(pat, '03-reserva');
   await pat.locator(T('confirm-booking')).click();
   await pat.locator(T('booking-screen')).waitFor();
@@ -61,6 +88,14 @@ async function login(p, local, intl) {
   await fis.locator('[data-testid^="booking-"]', { hasText: 'Por confirmar' }).first().click();
   await fis.locator(T('accept')).click();
   await fis.locator(T('depart')).click();
+  // En camino: el fisio comparte su ubicación y el paciente lo ve en el mapa con el tiempo estimado.
+  await fis.locator(T('sharing')).filter({ hasText: 'estás a' }).waitFor({ timeout: 20000 });
+  console.log('Fisio:', await fis.locator(T('sharing')).innerText());
+  await shot(fis, '05b-en-camino');
+  await pat.locator(T('eta')).filter({ hasText: 'llega en' }).waitFor({ timeout: 20000 });
+  console.log('Paciente:', await pat.locator(T('eta')).innerText());
+  await shot(pat, '05c-seguimiento');
+  await fis.context().setGeolocation(HOME);
   await fis.locator(T('arrive')).click();
   await fis.locator(T('pin-input')).waitFor();
   console.log('Fisio: estado →', await fis.locator(T('booking-status')).innerText());
@@ -116,5 +151,15 @@ async function login(p, local, intl) {
   console.log('Fisio: por cobrar', await fis.locator(T('pending-earnings')).innerText());
   await shot(fis, '11-ganancias');
   await fis.goto(`${URL}/profile`); await fis.waitForTimeout(1500); await shot(fis, '12-perfil-fisio');
+  await pat.goto(`${URL}/help`); await pat.locator(T('help-screen')).waitFor();
+  await pat.getByText('¿Cómo funciona la ubicación?').click();
+  await shot(pat, '13-ayuda');
+  console.log('Paciente: ayuda y garantías disponibles');
+  await pat.goto(`${URL}/account`); await pat.locator(T('delete-account')).click();
+  await pat.locator(T('confirm-dialog')).waitFor();
+  await shot(pat, '14-eliminar-cuenta');
+  await pat.locator(T('confirm-no')).click();
+  await pat.locator(T('confirm-dialog')).waitFor({ state: 'detached' });
+  console.log('Paciente: eliminar la cuenta pide confirmación (cancelado)');
   await browser.close();
 })().catch(e => { console.error('FALLÓ:', e.message); process.exit(1); });

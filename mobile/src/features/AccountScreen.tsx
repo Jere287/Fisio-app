@@ -1,9 +1,11 @@
 import { useState, type ReactNode } from 'react';
+import { router } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { call, client } from '@/api/client';
 import { keys, useMe, useNotifications, usePatients } from '@/api/queries';
 import { useAuth } from '@/auth/AuthProvider';
 import { money } from '@/lib/format';
+import { PrivacySection } from './PrivacySection';
 import { Badge, Button, Card, Chip, ErrorState, Field, Loading, Notice, Row, Screen, Stack, Text } from '@/ui';
 
 const KYC_LABEL: Record<string, [string, 'ok' | 'warn' | 'danger']> = {
@@ -65,7 +67,10 @@ export function AccountScreen({ family = true, children }: { family?: boolean; c
         {notifications.data?.length === 0 ? <Text muted variant="small">No tienes notificaciones.</Text> : null}
       </Stack>
 
+      <PrivacySection />
+
       <Stack>
+        <Button kind="ghost" testID="help" title="Ayuda y garantías" onPress={() => router.push('/help')} />
         <Button kind="line" testID="logout" title="Cerrar sesión" onPress={() => { signOut().catch(() => {}); }} />
         <Button kind="line" title="Cerrar sesión en todos mis dispositivos" loading={logoutAll.isPending} onPress={() => logoutAll.mutate()} />
         <Text variant="tiny" muted>Tus datos de salud se protegen según la Ley Orgánica de Protección de Datos Personales.</Text>

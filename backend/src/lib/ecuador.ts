@@ -24,5 +24,10 @@ export function normalizePhone(input: string): string | null {
   return null;
 }
 
-// Señales de alerta que contraindican fisioterapia a domicilio: se deriva a emergencias o médico.
-export const RED_FLAGS = ['chest_pain_or_breathless', 'fever', 'sudden_weakness', 'incontinence', 'major_trauma'] as const;
+// Señales de alarma, en dos niveles (triaje):
+// - Emergencia: posible infarto, ACV o síndrome de cola de caballo. No se reserva; se indica llamar al 911.
+// - Médico primero: posible infección o fractura. Se puede reservar si un médico ya lo evaluó y autorizó fisioterapia.
+export const EMERGENCY_FLAGS = ['chest_pain_or_breathless', 'sudden_weakness', 'incontinence'] as const;
+export const MEDICAL_FLAGS = ['fever', 'major_trauma'] as const;
+export const RED_FLAGS = [...EMERGENCY_FLAGS, ...MEDICAL_FLAGS] as const;
+export const isEmergencyFlag = (f: string) => (EMERGENCY_FLAGS as readonly string[]).includes(f);

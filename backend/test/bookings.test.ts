@@ -58,10 +58,19 @@ describe('Búsqueda', () => {
 describe('Reserva a domicilio de principio a fin', () => {
   let id: string, pin: string;
 
-  it('bloquea la reserva si hay señales de alerta', async () => {
-    const r = await book(12, { redFlags: ['chest_pain_or_breathless'] });
+  it('una señal de emergencia bloquea la reserva aunque haya autorización médica', async () => {
+    const r = await book(12, { redFlags: ['chest_pain_or_breathless'], medicalClearance: true });
     expect(r.status).toBe(422);
-    expect(r.body.error.code).toBe('red_flags');
+    expect(r.body.error.code).toBe('red_flags_emergency');
+  });
+
+  it('una señal de «médico primero» pide autorización y con ella se puede reservar', async () => {
+    const sin = await book(13, { redFlags: ['major_trauma'] });
+    expect(sin.body.error.code).toBe('red_flags_medical');
+    const con = await book(13, { redFlags: ['major_trauma'], medicalClearance: true });
+    expect(con.status).toBe(201);
+    expect(con.body.redFlags).toEqual(['major_trauma']);
+    expect(con.body.medicalClearance).toBe(true);
   });
 
   it('crea la reserva y retiene el pago', async () => {
@@ -94,6 +103,12 @@ describe('Reserva a domicilio de principio a fin', () => {
   it('«Llegué» solo funciona a menos de 150 m', async () => {
     const p = api(env, physio.token);
     await p.post(`/v1/bookings/${id}/depart`);
+    // En camino, el paciente ve dónde va el fisio y desde cuándo es esa ubicación.
+    const loc = await p.post(`/v1/bookings/${id}/location`, { lat: -0.1900, lng: -78.4830 });
+    expect(loc.body.distanceM).toBeGreaterThan(700);
+    const seen = await api(env, patient.token).get(`/v1/bookings/${id}`);
+    expect(seen.body.physioLocation).toMatchObject({ lat: -0.19, lng: -78.483 });
+    expect(seen.body.physioLocation.at).toBeTruthy();
     const far = await p.post(`/v1/bookings/${id}/arrive`, { lat: -0.1900, lng: -78.4830 });
     expect(far.status).toBe(422);
     expect(far.body.error.code).toBe('too_far');

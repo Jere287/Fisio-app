@@ -1385,9 +1385,6 @@ function cBook() {
     <div class="stack"><span class="h-sec">¿Para quién es la sesión?</span><div class="tags">${S.family.map(m => `<button class="chip" data-forwho="${m.id}" aria-pressed="${d.forWho === m.id}">${esc(m.name.split(' ')[0])} · ${esc(m.rel)}</button>`).join('')}</div>
       <span class="tiny muted">¿Es para alguien más? Agrégalo en Cuenta › Mi familia. Si es un menor de edad, un adulto responsable debe estar presente.</span></div>
     ${d.forWho !== 'me' ? thirdSection(d) : ''}
-    <div class="card stack"><b class="small">Antes de reservar: ¿tienes alguno de estos síntomas?</b>
-      ${RED_FLAGS.map((t, i) => `<label class="flag"><input type="checkbox" id="rf${i}" ${d.flags.includes(i) ? 'checked' : ''}><span>${t}</span></label>`).join('')}
-      ${d.flags.length ? `<div class="callout danger">${ic('alert')}<span><b>La fisioterapia no es lo indicado ahora.</b> Estos síntomas necesitan atención médica. Llama al <b class="mono">911</b> o acude a emergencias. Si no es urgente, consulta primero con un médico.</span></div>` : '<span class="tiny muted">Si no tienes ninguno, continúa. Es el mismo filtro que usan los fisios en la primera evaluación.</span>'}</div>
     <div class="stack"><span class="h-sec">Día</span><div class="days">${ds.map(x => `<button class="day" data-day="${x.key}" aria-pressed="${d.day === x.key}"><span>${x.lbl}</span><b>${x.n}</b></button>`).join('')}</div></div>
     <div class="stack"><span class="h-sec">Hora</span><div class="slots">${SLOTS.map((s, i) => `<button class="slot" data-slot="${i}" aria-pressed="${d.time === i}" ${taken(f.id, d.day, i) ? 'disabled' : ''}>${s}</button>`).join('')}</div></div>
     ${video ? `<div class="callout">${ic('video')}<span>Videollamada cifrada desde la app. Sirve para una primera valoración, revisar ejercicios o seguimiento. Si necesitas terapia manual, ${esc(f.name.split(' ')[0])} te recomendará una visita a domicilio.</span></div>` : `
@@ -1399,6 +1396,7 @@ function cBook() {
     </div>
     <div class="field"><label for="b-ref">Referencia (opcional)</label><input class="input" id="b-ref" value="${esc(d.ref)}" placeholder="Ej: edificio azul, timbre 3B"></div>`}
     ${painSection(d)}
+    ${triageCard(d)}
     <div class="field"><span class="small" style="font-weight:600">Orden médica o exámenes (opcional)</span><label class="upload" for="b-order">${ic(d.order ? 'check' : 'upload')}<span>${d.order ? esc(d.order) : 'Subir foto o PDF (radiografía, resonancia, orden del médico)'}</span><input type="file" accept="image/*,application/pdf" id="b-order"></label></div>
     <div class="stack"><span class="h-sec">Pago</span>
       ${canPack ? `<button class="payopt" data-pay="pack" aria-pressed="${pack}"><span class="radio"></span><span class="grow" style="flex:1"><b>Paquete prepagado</b><div class="tiny muted">Te quedan ${S.treatment.pack} sesiones</div></span>${ic('check', 'width="20" height="20"')}</button>` : ''}
@@ -1414,7 +1412,7 @@ function cBook() {
     <div class="callout">${ic('lock')}<span>${pack ? 'Usaremos 1 sesión de tu paquete cuando la sesión termine.' : `Retenemos ${money(total)} ahora y lo cobramos solo cuando la sesión termine. Si el fisio no confirma, se libera de inmediato.`}</span></div>
     <div class="row tiny muted" style="flex-wrap:wrap;gap:4px 10px"><span>Cancelación gratis hasta 12 horas antes.</span><span>Si tu fisio no llega, te devolvemos el 100%.</span><button class="linkbtn" data-go="ayuda">Ver garantías</button></div>
     <button class="btn" data-act="confirmBook" ${ok ? '' : 'disabled'}>Solicitar a ${esc(f.name.split(' ')[0])}</button>
-    ${ok || d.flags.length ? '' : '<span class="hint" style="text-align:center">Elige una hora, confirma tu ubicación y cuéntanos dónde te duele para continuar.</span>'}
+    ${ok || triageOutcome(d) === 'emergency' ? '' : '<span class="hint" style="text-align:center">Elige una hora, confirma tu ubicación, cuéntanos dónde te duele y responde la revisión de seguridad para continuar.</span>'}
   </div>`;
 }
 function statusText(b) {
@@ -1522,7 +1520,37 @@ function cPerfil() {
 }
 
 // ---------- Tratamiento (como Luna, Physitrack y Portea) ----------
-const RED_FLAGS = ['Dolor en el pecho o falta de aire', 'Fiebre o escalofríos junto con el dolor', 'Pérdida repentina de fuerza o sensibilidad en un brazo o una pierna', 'Pérdida del control de la orina o las heces', 'Caída o golpe fuerte reciente con deformidad o hinchazón grande'];
+// Señales de alarma con triaje en dos niveles. «e»: emergencia (911, no se reserva). «m»: médico primero (se reserva con autorización médica).
+// Frases concretas y con tiempo para que una secuela antigua (p. ej., debilidad después de un ACV ya tratado) no se tome como emergencia.
+const RED_FLAGS = [
+  { t: 'Dolor en el pecho o falta de aire ahora mismo', tier: 'e' },
+  { t: 'Debilidad, adormecimiento o cara caída que empezó de repente', tier: 'e', hint: 'Si es una secuela ya diagnosticada (por ejemplo, de un ACV), no la marques.' },
+  { t: 'Perdiste el control de la orina o las heces desde que empezó el dolor de espalda', tier: 'e' },
+  { t: 'Fiebre o escalofríos junto con el dolor', tier: 'm' },
+  { t: 'Caída o golpe fuerte en los últimos días, con deformidad, mucha hinchazón o sin poder apoyar', tier: 'm' },
+];
+function triageOutcome(d) {
+  if (!d.flagAns || (d.flagAns === 'yes' && !d.flags.length)) return 'unanswered';
+  if (d.flagAns === 'no') return 'clear';
+  if (d.flags.some(i => RED_FLAGS[i].tier === 'e')) return 'emergency';
+  return d.medClear ? 'clear' : 'needs_clearance';
+}
+function triageCard(d) {
+  const out = triageOutcome(d);
+  return `<div class="card stack" style="${out === 'emergency' ? 'border-color:var(--danger)' : out === 'needs_clearance' ? 'border-color:var(--warn)' : ''}">
+    <b>Revisión de seguridad</b>
+    <span class="tiny muted">Es el mismo filtro que hace un fisio en la primera consulta: hay pocos síntomas que necesitan un médico antes que fisioterapia.</span>
+    <b class="small">¿Tienes ahora alguna señal de alarma?</b>
+    <span class="tiny muted">Dolor en el pecho, debilidad repentina, pérdida del control de la orina, fiebre con el dolor o una caída fuerte reciente.</span>
+    <div class="tags"><button class="chip" data-act="triageNo" aria-pressed="${d.flagAns === 'no'}">No, ninguna</button><button class="chip" data-act="triageYes" aria-pressed="${d.flagAns === 'yes'}">Sí, tengo alguna</button></div>
+    ${d.flagAns === 'yes' ? `<span class="small" style="font-weight:600">Marca solo las que tienes ahora:</span>
+      ${RED_FLAGS.map((f, i) => `<label class="flag"><input type="checkbox" id="rf${i}" ${d.flags.includes(i) ? 'checked' : ''}><span>${f.t}${f.hint ? `<br><span class="tiny muted">${f.hint}</span>` : ''}</span></label>`).join('')}` : ''}
+    ${out === 'emergency' ? `<div class="callout danger">${ic('alert')}<span><b>Esto puede ser una emergencia.</b> No esperes una cita: llama al <b class="mono">911</b> o ve a emergencias ahora. Si marcaste algo por error, quítalo. <button class="linkbtn" data-act="triageReset">Me equivoqué</button></span></div>` : ''}
+    ${d.flagAns === 'yes' && d.flags.length && out !== 'emergency' ? `<div class="callout">${ic('alert')}<span>Con estos síntomas conviene que primero te vea un médico (para descartar una infección o una fractura). No hace falta llamar al 911 salvo que empeore.</span></div>
+      <label class="flag"><input type="checkbox" id="medClear" ${d.medClear ? 'checked' : ''}><span>Un médico ya me revisó y me indicó fisioterapia</span></label>
+      ${d.medClear ? '<span class="tiny muted">Tu fisio verá estas señales antes de la visita. Si puedes, sube la orden médica abajo.</span>' : ''}` : ''}
+  </div>`;
+}
 const EX = {
   puente: ['Puente de glúteos', '3 series × 12', 'Boca arriba con las rodillas dobladas. Sube la cadera, aprieta los glúteos 2 segundos y baja despacio.', '0:45'],
   pared: ['Sentadilla en la pared', '3 series × 10', 'Espalda apoyada en la pared. Baja hasta que las rodillas queden a 45° y sube. Las rodillas no pasan la punta de los pies.', '0:50'],
@@ -1872,7 +1900,7 @@ const bookOk = d => {
   return d.time != null
     && (d.motivo.trim().length > 4 || d.pain.zones.length > 0)
     && (d.mode === 'video' || (d.address.trim().length > 4 && d.pinOk))
-    && !d.flags.length
+    && triageOutcome(d) === 'clear'
     && !(third && d.third.companion === 'nadie' && (ageOf(m) >= 75 || !d.third.canSign));
 };
 
@@ -2233,6 +2261,9 @@ const ACTIONS = {
   },
   bizReset() { S.biz = { ...BIZ_DEF }; save(); render(); },
   pinConfirm() { S.draft.pinOk = true; save(); render(); },
+  triageNo() { Object.assign(S.draft, { flagAns: 'no', flags: [], medClear: false }); save(); render(); },
+  triageYes() { S.draft.flagAns = 'yes'; save(); render(); },
+  triageReset() { Object.assign(S.draft, { flagAns: null, flags: [], medClear: false }); save(); render(); },
   fAdvance(el) { const b = findReq(el.dataset.id); b.distLeft = Math.max(0.06, +(b.distLeft * 0.3).toFixed(2)); save(); render(); },
   doorOk() { activeBooking().doorOk = true; save(); render(); },
   doorNo() { doorMismatchModal(); },
@@ -2390,7 +2421,7 @@ function handle(el) {
     const bid = d.book || d.bookvideo;
     if (activeBooking()) { toast('Ya tienes una cita activa. Termínala o cancélala primero.'); return; }
     if (S.user.kycStatus !== 'ok') { verifyGateModal(); return; }
-    S.draft = { fisioId: bid, mode: d.bookvideo ? 'video' : 'casa', day: 1, time: null, address: ME.label + ', edificio Torre Carolina, piso 4', ref: '', motivo: '', pay: S.treatment.pack > 0 && bid === S.treatment.fisioId && !d.bookvideo ? 'pack' : 'card', pin: { x: 104, y: 46 }, pinOk: false, forWho: 'me', flags: [], eva: 5, order: '', pain: newPain(), third: { canSign: true, companion: 'yo', companionName: '', phone: '' } }; go('book'); return;
+    S.draft = { fisioId: bid, mode: d.bookvideo ? 'video' : 'casa', day: 1, time: null, address: ME.label + ', edificio Torre Carolina, piso 4', ref: '', motivo: '', pay: S.treatment.pack > 0 && bid === S.treatment.fisioId && !d.bookvideo ? 'pack' : 'card', pin: { x: 104, y: 46 }, pinOk: false, forWho: 'me', flags: [], flagAns: null, medClear: false, eva: 5, order: '', pain: newPain(), third: { canSign: true, companion: 'yo', companionName: '', phone: '' } }; go('book'); return;
   }
   if (d.day != null && S.draft) { S.draft.day = +d.day; S.draft.time = null; save(); render(); return; }
   if (d.slot != null && S.draft) { S.draft.time = +d.slot; save(); render(); return; }
@@ -2486,6 +2517,7 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.id === 'k-c0' || t.id === 'k-c1') { S.kyc.consent[+t.id.slice(-1)] = t.checked; save(); document.getElementById('kConsentBtn').disabled = !S.kyc.consent.every(Boolean); }
+  if (t.id === 'medClear' && S.draft) { S.draft.medClear = t.checked; save(); render(); }
   if (/^rf\d$/.test(t.id) && S.draft) { const i = +t.id.slice(2); S.draft.flags = t.checked ? S.draft.flags.concat(i) : S.draft.flags.filter(x => x !== i); save(); render(); }
   if (t.id === 'b-order' && t.files[0]) { S.draft.order = t.files[0].name; save(); render(); }
   if (t.id === 's-from' || t.id === 's-to') { S.fisio.sched[t.id.slice(2)] = t.value; save(); }

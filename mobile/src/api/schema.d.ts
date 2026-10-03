@@ -438,7 +438,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -1545,6 +1551,8 @@ export interface paths {
                             consentSigned: boolean;
                             doorConfirmed: boolean;
                             reviewed: boolean;
+                            redFlags: string[];
+                            medicalClearance: boolean;
                             patient: {
                                 name?: string;
                                 relationship?: string;
@@ -1565,6 +1573,8 @@ export interface paths {
                             physioLocation?: {
                                 lat: number | null;
                                 lng: number | null;
+                                /** Format: date-time */
+                                at: string | null;
                             } | null;
                             bookedBy?: {
                                 name: string;
@@ -1599,7 +1609,9 @@ export interface paths {
                         lat?: number;
                         lng?: number;
                         /** @default [] */
-                        redFlags?: ("chest_pain_or_breathless" | "fever" | "sudden_weakness" | "incontinence" | "major_trauma")[];
+                        redFlags?: ("chest_pain_or_breathless" | "sudden_weakness" | "incontinence" | "fever" | "major_trauma")[];
+                        /** @default false */
+                        medicalClearance?: boolean;
                         /**
                          * @default {
                          *       "zones": [],
@@ -1657,6 +1669,8 @@ export interface paths {
                             consentSigned: boolean;
                             doorConfirmed: boolean;
                             reviewed: boolean;
+                            redFlags: string[];
+                            medicalClearance: boolean;
                             patient: {
                                 name?: string;
                                 relationship?: string;
@@ -1677,6 +1691,8 @@ export interface paths {
                             physioLocation?: {
                                 lat: number | null;
                                 lng: number | null;
+                                /** Format: date-time */
+                                at: string | null;
                             } | null;
                             bookedBy?: {
                                 name: string;
@@ -1740,6 +1756,8 @@ export interface paths {
                             consentSigned: boolean;
                             doorConfirmed: boolean;
                             reviewed: boolean;
+                            redFlags: string[];
+                            medicalClearance: boolean;
                             patient: {
                                 name?: string;
                                 relationship?: string;
@@ -1760,6 +1778,8 @@ export interface paths {
                             physioLocation?: {
                                 lat: number | null;
                                 lng: number | null;
+                                /** Format: date-time */
+                                at: string | null;
                             } | null;
                             bookedBy?: {
                                 name: string;
@@ -1839,7 +1859,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -1875,7 +1901,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -1911,7 +1943,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -1954,7 +1992,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            distanceM: number;
+                        };
+                    };
                 };
             };
         };
@@ -1997,7 +2040,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -2087,7 +2136,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -2132,7 +2187,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -2174,7 +2235,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
@@ -2210,7 +2277,13 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                        } & {
+                            [key: string]: unknown;
+                        };
+                    };
                 };
             };
         };
