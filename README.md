@@ -12,6 +12,8 @@ App tipo Uber para fisioterapia a domicilio en Quito. El paciente busca especial
 | **Fisio** | Pestaña Pacientes con la historia clínica de cada uno (gráfico de dolor, ejercicios y notas SOAP), disponibilidad editable (días, horas, distancia, videollamada) y notificaciones. Registro de un fisio nuevo con documentos profesionales, selfie diaria para conectarse, «Llegué» solo a menos de 150 m, solicitudes con datos del paciente verificado, flujo de viaje, ingreso del PIN, nota de evolución SOAP con ejercicios para casa, avisos de dolor alto del paciente, calificación del paciente y ganancias con la comisión desglosada. Incluye su perfil con documentos y la opción de subir certificados. |
 | **Admin** | Casos de soporte con reembolso o suspensión. Revisión de fisios nuevos con su selfie y cédula lado a lado, alertas de emergencia, calculadora de rentabilidad (Negocio) y lista de pasos del lanzamiento (Plan). |
 
+**En tablet** se abre solo en modo tablet: la app ocupa toda la pantalla y Explorar muestra el mapa y la lista lado a lado. El botón «Pantalla completa» oculta la barra del navegador, y agregar `#tablet` al final del enlace fuerza este modo en cualquier equipo.
+
 Todos los perfiles, pagos y alertas son de ejemplo. El estado se guarda en el navegador y se borra con **Reiniciar demo**.
 
 `prototipo/app.html` es el archivo que se edita. Después de cambiarlo, corre `prototipo/build.sh` para regenerar `index.html`.
