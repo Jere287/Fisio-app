@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "FisioCerca",
+    "slug": "fisiocerca",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ec.fisiocerca.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E4EEF7",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "ec.fisiocerca.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "FisioCerca usa tu ubicación para mostrarte especialistas cerca y para confirmar la llegada del fisio a tu puerta."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "FisioCerca usa la cámara para fotografiar tu cédula y tomar tu selfie de verificación.",
+          "photosPermission": "FisioCerca necesita acceso a tus fotos para subir documentos."
+        }
+      ]
+    ],
+    "scheme": "fisiocerca",
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

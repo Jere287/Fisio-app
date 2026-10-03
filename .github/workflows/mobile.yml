@@ -1,0 +1,29 @@
+name: App móvil
+
+on:
+  push:
+    paths: ['mobile/**', 'backend/openapi.json', '.github/workflows/mobile.yml']
+  pull_request:
+    paths: ['mobile/**', 'backend/openapi.json', '.github/workflows/mobile.yml']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Los tipos de la API están al día con el backend
+        run: npm run api:types && git diff --exit-code src/api/schema.d.ts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: La versión web compila
+        run: npx expo export --platform web

@@ -30,9 +30,19 @@ Todos los perfiles, pagos y alertas son de ejemplo. El estado se guarda en el na
 - Pagos con retención, cobro y devolución, más libro contable y liquidaciones.
 - Historia clínica cifrada con registro de accesos.
 - Soporte, emergencias y panel de administración.
-- 47 pruebas automáticas contra una base de datos real.
+- Idempotencia en reservas, tareas programadas (vencimientos y recordatorios) y contrato de respuestas tipado.
+- 57 pruebas automáticas contra una base de datos real.
 
 Cómo arrancarlo: [`backend/README.md`](backend/README.md). Arquitectura, seguridad y lo que falta para producción: [`docs/backend.md`](docs/backend.md).
+
+## App móvil
+
+`mobile/` es la app real para iPhone, Android y web: Expo, React Native y TypeScript. Una sola app con dos modos:
+
+- **Paciente:** buscar fisios cerca, reservar para sí o para un familiar, describir el dolor, seguir la cita, confirmar el rostro en la puerta, firmar el consentimiento, dar el PIN, calificar y ver su tratamiento.
+- **Fisio:** conectarse con la selfie del día, aceptar solicitudes, «Llegué» con geocerca, iniciar con PIN, nota SOAP con ejercicios, ganancias, documentos y horario.
+
+Los tipos de la API se generan del contrato OpenAPI del backend, así que un cambio incompatible en el servidor rompe la compilación de la app antes de llegar a producción. Cómo arrancarla: [`mobile/README.md`](mobile/README.md).
 
 ## Documentos
 
